@@ -38,6 +38,14 @@ public sealed record GameConfig(
                         Range: 200,
                         CooldownTicksBetweenShots: 20),
                     Health: new Health(15)),
+                new TowerDefinition(
+                    TowerType.Flamethrower,
+                    new TowerStats(
+                        Cost: new Gold(150),
+                        DamagePerShot: new Damage(1),
+                        Range: 100,
+                        CooldownTicksBetweenShots: 1),
+                    Health: new Health(30)),
             },
             Units: new[]
             {
@@ -51,6 +59,16 @@ public sealed record GameConfig(
                     AttackRange: 100,
                     AttackCooldownTicksBetweenAttacks: 40,
                     LootGold: new Gold(10)),
+                new UnitDefinition(
+                    UnitType.Brute,
+                    Cost: new Budget(40),
+                    Health: new Health(30),
+                    SpeedPerTick: 1,
+                    DamageToBase: new Damage(5),
+                    DamageToTower: new Damage(10),
+                    AttackRange: 100,
+                    AttackCooldownTicksBetweenAttacks: 60,
+                    LootGold: new Gold(30)),
             });
     }
 

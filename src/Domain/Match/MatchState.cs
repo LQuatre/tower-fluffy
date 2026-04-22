@@ -141,6 +141,7 @@ public sealed record MatchState(
 
         var tower = new Tower(
             Id: NextEntityId,
+            Type: type,
             Position: position,
             Stats: definition.Stats,
             Health: definition.Health,
@@ -151,6 +152,42 @@ public sealed record MatchState(
             DefenderGold = DefenderGold.Subtract(definition.Stats.Cost),
             Simulation = Simulation.WithAddedTower(tower),
             NextEntityId = NextEntityId + 1,
+            LastCombatEvents = Array.Empty<CombatEvent>(),
+        };
+
+        return DomainResult<MatchState>.Success(updated);
+    }
+
+    public DomainResult<MatchState> MoveTower(GridPosition oldPosition, GridPosition newPosition)
+    {
+        if (Outcome != MatchOutcome.None)
+        {
+            return DomainResult<MatchState>.Failure("match.finished", "Le match est terminé.");
+        }
+
+        if (Phase != MatchPhase.Preparation)
+        {
+            return DomainResult<MatchState>.Failure("tower.phase", "Les tours ne peuvent être déplacées que pendant la préparation.");
+        }
+
+        if (Simulation.Towers.All(t => t.Position != oldPosition))
+        {
+            return DomainResult<MatchState>.Failure("tower.notfound", "Aucune tour à cet emplacement.");
+        }
+
+        if (!Map.IsBuildable(newPosition))
+        {
+            return DomainResult<MatchState>.Failure("tower.placement", "Impossible de placer une tour sur cette cellule.");
+        }
+
+        if (Simulation.Towers.Any(t => t.Position == newPosition))
+        {
+            return DomainResult<MatchState>.Failure("tower.occupied", "Une tour existe déjà sur cette cellule.");
+        }
+
+        var updated = this with
+        {
+            Simulation = Simulation.WithMovedTower(oldPosition, newPosition),
             LastCombatEvents = Array.Empty<CombatEvent>(),
         };
 

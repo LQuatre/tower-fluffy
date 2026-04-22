@@ -101,30 +101,45 @@ public sealed class GameBoardControl : Control
         base.OnPointerPressed(e);
 
         var snapshot = Snapshot;
-        if (snapshot is null)
-        {
-            return;
-        }
+        if (snapshot is null) return;
 
         var point = e.GetPosition(this);
         var cellSize = snapshot.Map.CellSize;
-        if (cellSize <= 0)
+        if (cellSize <= 0) return;
+
+        var cellX = (int)(point.X / cellSize);
+        var cellY = (int)(point.Y / cellSize);
+        var cell = new GridPositionDto(cellX, cellY);
+
+        // On ne déclenche le "Pressed" que s'il y a une tour à ramasser
+        var hasTower = snapshot.Towers.Any(t => t.Cell.X == cellX && t.Cell.Y == cellY);
+
+        var command = PlaceTowerCommand;
+        if (hasTower && command != null && command.CanExecute(cell))
         {
-            return;
+            command.Execute(cell);
         }
+    }
+
+    protected override void OnPointerReleased(PointerReleasedEventArgs e)
+    {
+        base.OnPointerReleased(e);
+
+        var snapshot = Snapshot;
+        if (snapshot is null) return;
+
+        var point = e.GetPosition(this);
+        var cellSize = snapshot.Map.CellSize;
+        if (cellSize <= 0) return;
 
         var cellX = (int)(point.X / cellSize);
         var cellY = (int)(point.Y / cellSize);
         var cell = new GridPositionDto(cellX, cellY);
 
         var command = PlaceTowerCommand;
-        if (command is null)
+        if (command != null && command.CanExecute(cell))
         {
-            return;
-        }
-
-        if (command.CanExecute(cell))
-        {
+            // On envoie le signal de relâchement (pour poser la tour)
             command.Execute(cell);
             InvalidateVisual();
         }
@@ -399,7 +414,7 @@ public sealed class GameBoardControl : Control
             return;
         }
 
-        _lineEffects.RemoveAll(e => (currentTick - e.SpawnTick) >= LineTtlTicks);
+        _lineEffects.RemoveAll(e => (currentTick - e.SpawnTick) >= e.Ttl);
         _pulseEffects.RemoveAll(e => (currentTick - e.SpawnTick) >= PulseTtlTicks);
 
         foreach (var e in snapshot.CombatEvents)
@@ -408,13 +423,11 @@ public sealed class GameBoardControl : Control
             var to = new Point(e.To.X, e.To.Y);
             var isKill = e.TargetDestroyed;
 
-            if (e.Kind == CombatEventKindDto.UnitHitBase)
-            {
-                _pulseEffects.Add(new PulseEffect(e.Tick, to, isKill));
-                continue;
-            }
+            var sourceTower = snapshot.Towers.FirstOrDefault(t => t.Id == e.SourceId);
+            var sourceType = sourceTower?.Type;
+            var ttl = sourceType == TowerTypeDto.Flamethrower ? 8 : LineTtlTicks;
 
-            _lineEffects.Add(new LineEffect(e.Tick, from, to, isKill));
+            _lineEffects.Add(new LineEffect(e.Tick, from, to, isKill, sourceType, ttl));
             _pulseEffects.Add(new PulseEffect(e.Tick, to, isKill));
         }
     }
@@ -440,14 +453,62 @@ public sealed class GameBoardControl : Control
             var age = currentTick - effect.SpawnTick;
             if (age < 0) continue;
 
-            var progress = GetProgress(age, LineTtlTicks);
+            var progress = GetProgress(age, effect.Ttl);
             var alpha = GetFadedAlpha(maxAlpha: effect.IsKill ? 255 : 180, progress);
             var thickness = effect.IsKill ? baseLineThickness * 1.5 : baseLineThickness;
 
             var brush = effect.IsKill ? attackerBrush : defenderBrush;
-            var pen = new Pen(CreateTintBrush(brush, alpha), thickness) { LineCap = PenLineCap.Round };
 
-            context.DrawLine(pen, effect.From, effect.To);
+            if (effect.SourceType == TowerTypeDto.Flamethrower)
+            {
+                // Rendu FLAMMES en CÔNE + PARTICULES
+                var fireColors = new[] { "#FF4500", "#FF8C00", "#FFD700", "#FFFFFF" };
+                var random = new Random(effect.SpawnTick + (int)effect.From.X + (int)effect.From.Y);
+                
+                var dir = new Vector(effect.To.X - effect.From.X, effect.To.Y - effect.From.Y);
+                var length = dir.Length;
+                if (length > 0.01)
+                {
+                    dir /= length;
+                    var perp = new Vector(-dir.Y, dir.X);
+                    
+                    // 1. Dessiner le cône de lueur (fond du lance-flammes)
+                    var coneWidth = length * 0.25;
+                    var p1 = effect.From;
+                    var p2 = effect.To + perp * coneWidth;
+                    var p3 = effect.To - perp * coneWidth;
+                    
+                    var coneGeometry = new StreamGeometry();
+                    using (var geoCtx = coneGeometry.Open())
+                    {
+                        geoCtx.BeginFigure(p1, isFilled: true);
+                        geoCtx.LineTo(p2);
+                        geoCtx.LineTo(p3);
+                        geoCtx.EndFigure(isClosed: true);
+                    }
+                    context.DrawGeometry(new SolidColorBrush(Color.Parse("#FF4500"), (byte)(alpha * 0.2)), null, coneGeometry);
+                    
+                    // 2. Dessiner les Particules (effet de projection)
+                    for (int i = 0; i < 15; i++)
+                    {
+                        var dist = random.NextDouble() * length;
+                        var spread = (dist / length) * coneWidth; // S'élargit avec la distance
+                        var offset = perp * (random.NextDouble() * spread * 2 - spread);
+                        var pos = effect.From + dir * dist + offset;
+                        
+                        var pSize = (random.NextDouble() * 3 + 1.5) * (1.0 - progress);
+                        var pColor = Color.Parse(fireColors[random.Next(fireColors.Length)]);
+                        var pBrush = new SolidColorBrush(pColor, (byte)(alpha * (0.5 + random.NextDouble() * 0.5)));
+                        
+                        context.DrawEllipse(pBrush, null, pos, pSize, pSize);
+                    }
+                }
+            }
+            else
+            {
+                var pen = new Pen(CreateTintBrush(brush, alpha), thickness) { LineCap = PenLineCap.Round };
+                context.DrawLine(pen, effect.From, effect.To);
+            }
         }
 
         foreach (var effect in _pulseEffects)
@@ -483,7 +544,7 @@ public sealed class GameBoardControl : Control
         return (byte)Math.Clamp(a, 0, 255);
     }
 
-    private readonly record struct LineEffect(int SpawnTick, Point From, Point To, bool IsKill);
+    private readonly record struct LineEffect(int SpawnTick, Point From, Point To, bool IsKill, TowerTypeDto? SourceType, int Ttl);
 
     private readonly record struct PulseEffect(int SpawnTick, Point Center, bool IsKill);
 }

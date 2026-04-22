@@ -26,11 +26,15 @@ public record PlayerAction(
     int? TowerType = null, 
     int? X = null, 
     int? Y = null,
-    int? UnitType = null);
+    int? UnitType = null,
+    int? OldX = null,
+    int? OldY = null);
 
 public enum PlayerActionKind
 {
     PlaceTower,
     SendWave,
-    UpgradeTower
+    UpgradeTower,
+    MoveTower,
+    SkipPreparation
 }

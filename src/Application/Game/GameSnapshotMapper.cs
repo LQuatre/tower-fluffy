@@ -49,6 +49,7 @@ public static class GameSnapshotMapper
         var towers = state.Simulation.Towers
             .Select(t => new TowerDto(
                 Id: t.Id,
+                Type: (TowerTypeDto)t.Type,
                 Cell: new GridPositionDto(t.Position.X, t.Position.Y),
                 Health: t.Health.Value,
                 CooldownTicksRemaining: t.CooldownTicksRemaining))
