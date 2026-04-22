@@ -1,7 +1,13 @@
-﻿using TowerFluffy.Application.Game;
+using TowerFluffy.Application.Game;
 using TowerFluffy.Application.Game.Dtos;
+using TowerFluffy.Application.Common.Networking;
+using TowerFluffy.Infrastructure.Networking;
 using ReactiveUI;
+using System;
+using System.Globalization;
 using System.Reactive;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace TowerFluffy.UI.Desktop.ViewModels;
 
@@ -12,6 +18,13 @@ public sealed class MainWindowViewModel : ViewModelBase
     private string? _lastError;
     private GameSpeedSetting _speedSetting;
     private bool _halfSpeedToggle;
+    private SignalRGameClient? _networkClient;
+    private bool _isConnected;
+    private bool _isReady;
+    private bool _isGameStarted;
+    private bool _isOpponentReady;
+    private string _serverUrl = "http://localhost:5000/gameHub";
+    private PlayerRole _selectedRole = PlayerRole.Both;
 
     public MainWindowViewModel()
         : this(GameSession.CreateMvp())
@@ -31,13 +44,88 @@ public sealed class MainWindowViewModel : ViewModelBase
         SetSpeedHalfCommand = ReactiveCommand.Create(() => SetSpeed(GameSpeedSetting.Half));
         SetSpeedNormalCommand = ReactiveCommand.Create(() => SetSpeed(GameSpeedSetting.Normal));
         SetSpeedDoubleCommand = ReactiveCommand.Create(() => SetSpeed(GameSpeedSetting.Double));
+        ConnectCommand = ReactiveCommand.CreateFromTask(ExecuteConnect);
+    }
+
+    public string ServerUrl
+    {
+        get => _serverUrl;
+        set => this.RaiseAndSetIfChanged(ref _serverUrl, value);
+    }
+
+    public bool IsConnected
+    {
+        get => _isConnected;
+        private set => this.RaiseAndSetIfChanged(ref _isConnected, value);
+    }
+
+    public PlayerRole SelectedRole
+    {
+        get => _selectedRole;
+        set 
+        {
+            this.RaiseAndSetIfChanged(ref _selectedRole, value);
+            this.RaisePropertyChanged(nameof(CanPlaceTower));
+            this.RaisePropertyChanged(nameof(CanSendUnits));
+        }
+    }
+
+    public bool CanPlaceTower => SelectedRole is PlayerRole.Both or PlayerRole.Defender;
+    public bool CanSendUnits => SelectedRole is PlayerRole.Both or PlayerRole.Attacker;
+
+    public bool IsReady
+    {
+        get => _isReady;
+        set 
+        {
+            this.RaiseAndSetIfChanged(ref _isReady, value);
+            _networkClient?.SetReady(value);
+        }
+    }
+
+    public bool IsGameStarted
+    {
+        get => _isGameStarted;
+        private set => this.RaiseAndSetIfChanged(ref _isGameStarted, value);
+    }
+
+    public bool IsOpponentReady
+    {
+        get => _isOpponentReady;
+        private set => this.RaiseAndSetIfChanged(ref _isOpponentReady, value);
     }
 
     public GameSnapshotDto Snapshot
     {
         get => _snapshot;
-        private set => this.RaiseAndSetIfChanged(ref _snapshot, value);
+        private set
+        {
+            this.RaiseAndSetIfChanged(ref _snapshot, value);
+            this.RaisePropertyChanged(nameof(PreparationTimeFormatted));
+            this.RaisePropertyChanged(nameof(WaveSendTimeFormatted));
+            this.RaisePropertyChanged(nameof(IsPreparationTimerVisible));
+            this.RaisePropertyChanged(nameof(PhaseFormatted));
+            this.RaisePropertyChanged(nameof(ActivePhaseLabel));
+            this.RaisePropertyChanged(nameof(ActivePhaseTime));
+            this.RaisePropertyChanged(nameof(IsDefenderPhase));
+        }
     }
+
+    public string PreparationTimeFormatted => $"{Snapshot.Hud.PreparationTicksRemaining / 60.0:F1} sec";
+    public string WaveSendTimeFormatted => $"{Snapshot.Hud.WaveSendTicksRemaining / 60.0:F1} sec";
+    public bool IsPreparationTimerVisible => Snapshot.Hud.PreparationTicksRemaining > 0;
+
+    public string PhaseFormatted => Snapshot.Hud.Phase switch
+    {
+        MatchPhaseDto.Preparation => "Préparation",
+        MatchPhaseDto.Wave => "Vague",
+        MatchPhaseDto.Finished => "Terminé",
+        _ => Snapshot.Hud.Phase.ToString()
+    };
+
+    public string ActivePhaseLabel => Snapshot.Hud.Phase == MatchPhaseDto.Preparation ? "PHASE DE DÉFENSE" : "PHASE D'ATTAQUE";
+    public string ActivePhaseTime => Snapshot.Hud.Phase == MatchPhaseDto.Preparation ? PreparationTimeFormatted : WaveSendTimeFormatted;
+    public bool IsDefenderPhase => Snapshot.Hud.Phase == MatchPhaseDto.Preparation;
 
     public string? LastError
     {
@@ -58,9 +146,15 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ReactiveCommand<Unit, Unit> SetSpeedHalfCommand { get; }
     public ReactiveCommand<Unit, Unit> SetSpeedNormalCommand { get; }
     public ReactiveCommand<Unit, Unit> SetSpeedDoubleCommand { get; }
+    public ReactiveCommand<Unit, Unit> ConnectCommand { get; }
 
     public void Tick()
     {
+        if (!IsGameStarted && SelectedRole != PlayerRole.Both)
+        {
+            return;
+        }
+
         var ticks = GetTicksToSimulate();
         if (ticks <= 0)
         {
@@ -94,7 +188,9 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private void ExecuteSendGrunt()
     {
+        if (!CanSendUnits) return;
         Apply(_session.SendUnit(UnitTypeDto.Grunt));
+        BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitTypeDto.Grunt);
     }
 
     private void ExecuteReset()
@@ -106,13 +202,67 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private void ExecutePlaceTower(GridPositionDto position)
     {
+        if (!CanPlaceTower) return;
         Apply(_session.PlaceTower(TowerTypeDto.BasicShooter, position));
+        BroadcastAction(PlayerActionKind.PlaceTower, towerType: (int)TowerTypeDto.BasicShooter, x: position.X, y: position.Y);
+    }
+
+    private async Task ExecuteConnect()
+    {
+        try
+        {
+            _networkClient = new SignalRGameClient(ServerUrl);
+            _networkClient.OnPlayerActionReceived += HandleNetworkAction;
+            _networkClient.OnGameStarted += () => IsGameStarted = true;
+            _networkClient.OnOpponentReady += (ready) => IsOpponentReady = ready;
+            _networkClient.OnChatReceived += (sender, message) => 
+            {
+                // TODO: Handle chat
+            };
+            await _networkClient.StartAsync();
+            await _networkClient.JoinGame("default-game");
+            IsConnected = true;
+            LastError = null;
+        }
+        catch (System.Exception ex)
+        {
+            LastError = $"Connection failed: {ex.Message}";
+        }
+    }
+
+    private void HandleNetworkAction(PlayerAction action)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+            switch (action.Kind)
+            {
+                case PlayerActionKind.PlaceTower:
+                    if (action.TowerType.HasValue && action.X.HasValue && action.Y.HasValue)
+                    {
+                        Apply(_session.PlaceTower((TowerTypeDto)action.TowerType.Value, new GridPositionDto(action.X.Value, action.Y.Value)));
+                    }
+                    break;
+                case PlayerActionKind.SendWave:
+                    if (action.UnitType.HasValue)
+                    {
+                        Apply(_session.SendUnit((UnitTypeDto)action.UnitType.Value));
+                    }
+                    break;
+            }
+        });
     }
 
     private void SetSpeed(GameSpeedSetting speed)
     {
         SpeedSetting = speed;
         _halfSpeedToggle = false;
+    }
+
+    private void BroadcastAction(PlayerActionKind kind, int? towerType = null, int? x = null, int? y = null, int? unitType = null)
+    {
+        if (_networkClient != null && IsConnected)
+        {
+            _ = _networkClient.SendPlayerAction(new PlayerAction(1, kind, towerType, x, y, unitType));
+        }
     }
 
     private void Apply(CommandResult result)
@@ -128,9 +278,35 @@ public sealed class MainWindowViewModel : ViewModelBase
     }
 }
 
+public enum PlayerRole
+{
+    Both,
+    Attacker,
+    Defender
+}
+
 public enum GameSpeedSetting
 {
     Half = 0,
     Normal = 1,
     Double = 2,
+}
+
+public class ReadyToColorConverter : Avalonia.Data.Converters.IValueConverter
+{
+    public static readonly ReadyToColorConverter Instance = new();
+
+    public object? Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
+    {
+        if (value is bool ready && ready)
+        {
+            return Avalonia.Media.Brush.Parse("#00F2FF"); // DefenderColor
+        }
+        return Avalonia.Media.Brush.Parse("#40FFFFFF"); // Muted/Empty
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
 }

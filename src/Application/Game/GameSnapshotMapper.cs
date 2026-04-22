@@ -22,11 +22,11 @@ public static class GameSnapshotMapper
             Height: map.Grid.Height,
             CellSize: map.Grid.CellSize,
             BlockedCells: map.BlockedCells.Select(c => new GridPositionDto(c.X, c.Y)).ToArray(),
-            PathStart: new WorldPositionDto(map.Path.Start.X, map.Path.Start.Y),
-            PathEnd: new WorldPositionDto(map.Path.End.X, map.Path.End.Y));
+            Waypoints: map.Path.Waypoints.Select(w => new WorldPositionDto(w.X, w.Y)).ToArray());
 
         var hudDto = new HudDto(
             Tick: state.Simulation.Tick.Value,
+            Level: state.CurrentLevel,
             BaseHealth: state.Simulation.BaseHealth.Value,
             DefenderGold: state.DefenderGold.Value,
             AttackerBudget: state.AttackerBudget.Value,
@@ -41,6 +41,7 @@ public static class GameSnapshotMapper
             .Select(u => new UnitDto(
                 Id: u.Id,
                 Position: ToWorldPositionDto(map.Path.GetPositionAtDistance(u.DistanceAlongPath)),
+                Direction: ToWorldPositionDto(map.Path.GetDirectionAtDistance(u.DistanceAlongPath)),
                 Health: u.Health.Value,
                 DistanceAlongPath: u.DistanceAlongPath))
             .ToArray();

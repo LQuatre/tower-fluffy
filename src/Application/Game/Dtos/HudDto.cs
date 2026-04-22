@@ -2,6 +2,7 @@ namespace TowerFluffy.Application.Game.Dtos;
 
 public sealed record HudDto(
     int Tick,
+    int Level,
     int BaseHealth,
     int DefenderGold,
     int AttackerBudget,

@@ -78,24 +78,22 @@ public sealed class GameBoardControl : Control
 
         var boardRect = new Rect(0, 0, boardWidth, boardHeight);
 
-        var stroke = TryGetThemeBrush("SystemControlForegroundBaseHighBrush") ?? Brushes.Black;
-        var background =
-            TryGetThemeBrush("SystemControlBackgroundAltHighBrush")
-            ?? TryGetThemeBrush("SystemControlBackgroundBaseLowBrush")
-            ?? Brushes.Transparent;
+        // Futuristic Colors
+        var defenderColor = Color.Parse("#00F2FF");
+        var attackerColor = Color.Parse("#FF00E5");
+        var gridColor = Color.Parse("#48FFFFFF");
+        var pathColor = Color.Parse("#15FFFFFF");
 
-        var gridStroke = CreateTintBrush(stroke, alpha: 50);
-        var gridPen = new Pen(gridStroke, thickness: 1);
+        var defenderBrush = new SolidColorBrush(defenderColor);
+        var attackerBrush = new SolidColorBrush(attackerColor);
+        var gridPen = new Pen(new SolidColorBrush(gridColor), thickness: 0.8);
 
-        var strongPen = new Pen(stroke, thickness: 2);
-        var softFill = CreateTintBrush(stroke, alpha: 24);
-
-        RenderBoard(context, boardRect, background);
+        RenderBoard(context, boardRect, Brushes.Transparent);
         RenderGrid(context, snapshot, gridPen);
-        RenderPath(context, snapshot, stroke, cellSize);
-        RenderTowers(context, snapshot, strongPen, softFill, cellSize);
-        RenderUnits(context, snapshot, strongPen, softFill, cellSize);
-        RenderCombatEffects(context, snapshot, stroke, cellSize);
+        RenderPath(context, snapshot, pathColor, cellSize);
+        RenderTowers(context, snapshot, defenderBrush, cellSize);
+        RenderUnits(context, snapshot, attackerBrush, cellSize);
+        RenderCombatEffects(context, snapshot, defenderBrush, attackerBrush, cellSize);
     }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
@@ -168,39 +166,39 @@ public sealed class GameBoardControl : Control
         }
     }
 
-    private static void RenderPath(DrawingContext context, GameSnapshotDto snapshot, IBrush stroke, int cellSize)
+    private static void RenderPath(DrawingContext context, GameSnapshotDto snapshot, Color pathColor, int cellSize)
     {
-        var blockedFill = CreateTintBrush(stroke, alpha: 18);
-        var blockedStroke = CreateTintBrush(stroke, alpha: 60);
-        var blockedPen = new Pen(blockedStroke, thickness: 1);
-
-        foreach (var cell in snapshot.Map.BlockedCells)
+        if (snapshot.Map.Waypoints.Count < 2)
         {
-            var cellRect = new Rect(cell.X * cellSize, cell.Y * cellSize, cellSize, cellSize);
-            context.DrawRectangle(blockedFill, blockedPen, cellRect);
-            DrawHatch(context, cellRect, blockedPen);
+            return;
         }
 
-        var start = new Point(snapshot.Map.PathStart.X, snapshot.Map.PathStart.Y);
-        var end = new Point(snapshot.Map.PathEnd.X, snapshot.Map.PathEnd.Y);
-        var pathThickness = Math.Max(6, cellSize * 0.35);
-        var pathPen = new Pen(CreateTintBrush(stroke, alpha: 70), thickness: pathThickness)
+        var pathBrush = new SolidColorBrush(pathColor);
+        var pathPen = new Pen(pathBrush, thickness: cellSize * 0.8)
         {
             LineCap = PenLineCap.Round,
             LineJoin = PenLineJoin.Round,
         };
 
-        var centerPen = new Pen(CreateTintBrush(stroke, alpha: 120), thickness: 2)
+        var centerPen = new Pen(new SolidColorBrush(Color.FromArgb(40, 255, 255, 255)), thickness: 2)
         {
             DashStyle = new DashStyle(new[] { 4.0, 6.0 }, offset: 0),
-            LineCap = PenLineCap.Round,
         };
 
-        context.DrawLine(pathPen, start, end);
-        context.DrawLine(centerPen, start, end);
+        for (var i = 0; i < snapshot.Map.Waypoints.Count - 1; i++)
+        {
+            var p1 = new Point(snapshot.Map.Waypoints[i].X, snapshot.Map.Waypoints[i].Y);
+            var p2 = new Point(snapshot.Map.Waypoints[i + 1].X, snapshot.Map.Waypoints[i + 1].Y);
 
-        DrawEndpointMarker(context, start, stroke, size: Math.Max(8, cellSize * 0.18));
-        DrawEndpointMarker(context, end, stroke, size: Math.Max(14, cellSize * 0.28));
+            context.DrawLine(pathPen, p1, p2);
+            context.DrawLine(centerPen, p1, p2);
+        }
+
+        var start = new Point(snapshot.Map.Waypoints[0].X, snapshot.Map.Waypoints[0].Y);
+        var end = new Point(snapshot.Map.Waypoints[^1].X, snapshot.Map.Waypoints[^1].Y);
+
+        DrawEndpointMarker(context, start, new SolidColorBrush(Color.Parse("#FF2E2E")), size: cellSize * 0.2);
+        DrawEndpointMarker(context, end, new SolidColorBrush(Color.Parse("#00FF94")), size: cellSize * 0.3);
     }
 
     private static void DrawHatch(DrawingContext context, Rect rect, Pen pen)
@@ -224,53 +222,54 @@ public sealed class GameBoardControl : Control
     private static void RenderTowers(
         DrawingContext context,
         GameSnapshotDto snapshot,
-        Pen strongPen,
-        IBrush fill,
+        ISolidColorBrush brush,
         int cellSize)
     {
+        var glowBrush = new SolidColorBrush(brush.Color, opacity: 0.2);
+        var strongPen = new Pen(brush, thickness: 2);
+
         foreach (var tower in snapshot.Towers)
         {
             var cellRect = new Rect(tower.Cell.X * cellSize, tower.Cell.Y * cellSize, cellSize, cellSize);
-            var inset = Math.Max(4, cellSize * 0.16);
+            var inset = cellSize * 0.2;
             var outer = cellRect.Deflate(inset);
 
-            var geometry = CreateCutCornerRectGeometry(outer, cut: Math.Max(3, cellSize * 0.12));
-            context.DrawGeometry(fill, strongPen, geometry);
+            // Glow
+            context.DrawEllipse(glowBrush, null, outer.Center, outer.Width * 0.8, outer.Height * 0.8);
 
-            var center = new Point(outer.X + (outer.Width / 2), outer.Y + (outer.Height / 2));
-            var coreRadius = Math.Max(3, cellSize * 0.10);
-            var strokeBrush = strongPen.Brush ?? Brushes.Transparent;
-            context.DrawEllipse(CreateTintBrush(strokeBrush, alpha: 36), strongPen, center, coreRadius, coreRadius);
+            var geometry = CreateCutCornerRectGeometry(outer, cut: cellSize * 0.15);
+            context.DrawGeometry(new SolidColorBrush(brush.Color, 0.1), strongPen, geometry);
 
-            DrawHealthPips(context, tower.Health, anchor: new Point(outer.Left, outer.Top - 2), maxPips: 5, stroke: strokeBrush);
+            // Core
+            var coreRadius = cellSize * 0.1;
+            context.DrawEllipse(brush, null, outer.Center, coreRadius, coreRadius);
+
+            DrawHealthPips(context, tower.Health, anchor: new Point(outer.Left, outer.Top - 6), maxPips: 5, stroke: brush);
         }
     }
 
     private static void RenderUnits(
         DrawingContext context,
         GameSnapshotDto snapshot,
-        Pen strongPen,
-        IBrush fill,
+        ISolidColorBrush brush,
         int cellSize)
     {
-        var direction = GetDominantPathDirection(snapshot);
-        var strokeBrush = strongPen.Brush ?? Brushes.Transparent;
-        var trailPen = new Pen(CreateTintBrush(strokeBrush, alpha: 50), thickness: 2)
-        {
-            LineCap = PenLineCap.Round,
-        };
+        var strongPen = new Pen(brush, thickness: 2);
+        var trailBrush = new SolidColorBrush(brush.Color, opacity: 0.3);
+        var trailPen = new Pen(trailBrush, thickness: 2) { LineCap = PenLineCap.Round };
 
         foreach (var unit in snapshot.Units)
         {
             var center = new Point(unit.Position.X, unit.Position.Y);
-            var radius = Math.Max(6, cellSize * 0.14);
+            var direction = new Vector(unit.Direction.X, unit.Direction.Y);
+            var radius = cellSize * 0.15;
 
-            DrawTrail(context, center, direction, trailPen, length: radius * 1.8);
+            DrawTrail(context, center, direction, trailPen, length: radius * 2.5);
 
             var unitGeometry = CreateArrowGeometry(center, radius, direction);
-            context.DrawGeometry(fill, strongPen, unitGeometry);
+            context.DrawGeometry(new SolidColorBrush(brush.Color, 0.2), strongPen, unitGeometry);
 
-            DrawHealthPips(context, unit.Health, anchor: new Point(center.X - radius, center.Y - radius - 6), maxPips: 5, stroke: strokeBrush);
+            DrawHealthPips(context, unit.Health, anchor: new Point(center.X - radius, center.Y - radius - 8), maxPips: 5, stroke: brush);
         }
     }
 
@@ -288,8 +287,15 @@ public sealed class GameBoardControl : Control
 
     private static Vector GetDominantPathDirection(GameSnapshotDto snapshot)
     {
-        var dx = snapshot.Map.PathEnd.X - snapshot.Map.PathStart.X;
-        var dy = snapshot.Map.PathEnd.Y - snapshot.Map.PathStart.Y;
+        if (snapshot.Map.Waypoints.Count < 2)
+        {
+            return new Vector(1, 0);
+        }
+
+        var start = snapshot.Map.Waypoints[0];
+        var end = snapshot.Map.Waypoints[^1];
+        var dx = end.X - start.X;
+        var dy = end.Y - start.Y;
 
         if (Math.Abs(dx) >= Math.Abs(dy))
         {
@@ -413,7 +419,12 @@ public sealed class GameBoardControl : Control
         }
     }
 
-    private void RenderCombatEffects(DrawingContext context, GameSnapshotDto snapshot, IBrush stroke, int cellSize)
+    private void RenderCombatEffects(
+        DrawingContext context,
+        GameSnapshotDto snapshot,
+        IBrush defenderBrush,
+        IBrush attackerBrush,
+        int cellSize)
     {
         var currentTick = snapshot.Hud.Tick;
         if (currentTick < 0)
@@ -421,25 +432,20 @@ public sealed class GameBoardControl : Control
             return;
         }
 
-        var baseLineThickness = Math.Max(2.0, cellSize * 0.06);
-        var basePulseRadius = Math.Max(6.0, cellSize * 0.12);
+        var baseLineThickness = Math.Max(2.0, cellSize * 0.08);
+        var basePulseRadius = Math.Max(6.0, cellSize * 0.15);
 
         foreach (var effect in _lineEffects)
         {
             var age = currentTick - effect.SpawnTick;
-            if (age < 0)
-            {
-                continue;
-            }
+            if (age < 0) continue;
 
             var progress = GetProgress(age, LineTtlTicks);
-            var alpha = GetFadedAlpha(maxAlpha: effect.IsKill ? 200 : 160, progress);
-            var thickness = effect.IsKill ? baseLineThickness * 1.3 : baseLineThickness;
+            var alpha = GetFadedAlpha(maxAlpha: effect.IsKill ? 255 : 180, progress);
+            var thickness = effect.IsKill ? baseLineThickness * 1.5 : baseLineThickness;
 
-            var pen = new Pen(CreateTintBrush(stroke, alpha), thickness)
-            {
-                LineCap = PenLineCap.Round,
-            };
+            var brush = effect.IsKill ? attackerBrush : defenderBrush;
+            var pen = new Pen(CreateTintBrush(brush, alpha), thickness) { LineCap = PenLineCap.Round };
 
             context.DrawLine(pen, effect.From, effect.To);
         }
@@ -447,18 +453,14 @@ public sealed class GameBoardControl : Control
         foreach (var effect in _pulseEffects)
         {
             var age = currentTick - effect.SpawnTick;
-            if (age < 0)
-            {
-                continue;
-            }
+            if (age < 0) continue;
 
             var progress = GetProgress(age, PulseTtlTicks);
-            var alpha = GetFadedAlpha(maxAlpha: effect.IsKill ? 160 : 120, progress);
+            var alpha = GetFadedAlpha(maxAlpha: 180, progress);
 
-            var radius = basePulseRadius + (progress * basePulseRadius * (effect.IsKill ? 1.1 : 0.8));
-            var penThickness = effect.IsKill ? 2.5 : 2.0;
-            var pen = new Pen(CreateTintBrush(stroke, alpha), penThickness);
-            var fill = CreateTintBrush(stroke, (byte)Math.Max(0, alpha - 60));
+            var radius = basePulseRadius + (progress * basePulseRadius * 1.5);
+            var pen = new Pen(CreateTintBrush(attackerBrush, alpha), 2);
+            var fill = CreateTintBrush(attackerBrush, (byte)(alpha / 3));
 
             context.DrawEllipse(fill, pen, effect.Center, radius, radius);
         }

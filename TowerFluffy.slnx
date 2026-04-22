@@ -9,6 +9,9 @@
   <Folder Name="/src/Infrastructure/">
     <Project Path="src/Infrastructure/TowerFluffy.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Server/">
+    <Project Path="src/Server/TowerFluffy.Server.csproj" />
+  </Folder>
   <Folder Name="/src/UI.Desktop/">
     <Project Path="src/UI.Desktop/TowerFluffy.UI.Desktop.csproj" />
   </Folder>

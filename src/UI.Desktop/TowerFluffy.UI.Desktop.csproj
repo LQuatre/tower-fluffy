@@ -27,5 +27,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Application\TowerFluffy.Application.csproj" />
+    <ProjectReference Include="..\Infrastructure\TowerFluffy.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

@@ -25,6 +25,7 @@ public sealed class Path
         _totalLength = CalculateTotalLength(_waypoints);
     }
 
+    public IReadOnlyList<WorldPosition> Waypoints => _waypoints;
     public int TotalLength => _totalLength;
     public WorldPosition Start => _waypoints[0];
     public WorldPosition End => _waypoints[^1];
@@ -57,6 +58,43 @@ public sealed class Path
         }
 
         return End;
+    }
+
+    public WorldPosition GetDirectionAtDistance(int distance)
+    {
+        if (distance <= 0)
+        {
+            return GetSegmentDirection(0);
+        }
+
+        if (distance >= _totalLength)
+        {
+            return GetSegmentDirection(_waypoints.Length - 2);
+        }
+
+        var remaining = distance;
+        for (var index = 0; index < _waypoints.Length - 1; index++)
+        {
+            var segmentStart = _waypoints[index];
+            var segmentEnd = _waypoints[index + 1];
+            var segmentLength = GetSegmentLength(segmentStart, segmentEnd);
+
+            if (remaining < segmentLength)
+            {
+                return GetSegmentDirection(index);
+            }
+
+            remaining -= segmentLength;
+        }
+
+        return GetSegmentDirection(_waypoints.Length - 2);
+    }
+
+    private WorldPosition GetSegmentDirection(int segmentIndex)
+    {
+        var start = _waypoints[segmentIndex];
+        var end = _waypoints[segmentIndex + 1];
+        return new WorldPosition(Math.Sign(end.X - start.X), Math.Sign(end.Y - start.Y));
     }
 
     private static int CalculateTotalLength(IReadOnlyList<WorldPosition> waypoints)
