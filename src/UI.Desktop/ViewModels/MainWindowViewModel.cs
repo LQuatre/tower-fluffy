@@ -20,10 +20,11 @@ public sealed class MainWindowViewModel : ViewModelBase
     private bool _halfSpeedToggle;
     private SignalRGameClient? _networkClient;
     private bool _isConnected;
+    private bool _isConnecting;
     private bool _isReady;
     private bool _isGameStarted;
     private bool _isOpponentReady;
-    private string _serverUrl = "http://localhost:5000/gameHub";
+    private string _serverUrl = "http://localhost:5128/gameHub";
     private PlayerRole _selectedRole = PlayerRole.Both;
 
     public MainWindowViewModel()
@@ -45,6 +46,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         SetSpeedNormalCommand = ReactiveCommand.Create(() => SetSpeed(GameSpeedSetting.Normal));
         SetSpeedDoubleCommand = ReactiveCommand.Create(() => SetSpeed(GameSpeedSetting.Double));
         ConnectCommand = ReactiveCommand.CreateFromTask(ExecuteConnect);
+        StartSoloCommand = ReactiveCommand.Create(ExecuteStartSolo);
     }
 
     public string ServerUrl
@@ -56,7 +58,18 @@ public sealed class MainWindowViewModel : ViewModelBase
     public bool IsConnected
     {
         get => _isConnected;
-        private set => this.RaiseAndSetIfChanged(ref _isConnected, value);
+        private set 
+        {
+            this.RaiseAndSetIfChanged(ref _isConnected, value);
+            this.RaisePropertyChanged(nameof(IsLobbyVisible));
+            this.RaisePropertyChanged(nameof(IsConnectionVisible));
+        }
+    }
+
+    public bool IsConnecting
+    {
+        get => _isConnecting;
+        private set => this.RaiseAndSetIfChanged(ref _isConnecting, value);
     }
 
     public PlayerRole SelectedRole
@@ -67,6 +80,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             this.RaiseAndSetIfChanged(ref _selectedRole, value);
             this.RaisePropertyChanged(nameof(CanPlaceTower));
             this.RaisePropertyChanged(nameof(CanSendUnits));
+            this.RaisePropertyChanged(nameof(IsSoloMode));
         }
     }
 
@@ -86,7 +100,12 @@ public sealed class MainWindowViewModel : ViewModelBase
     public bool IsGameStarted
     {
         get => _isGameStarted;
-        private set => this.RaiseAndSetIfChanged(ref _isGameStarted, value);
+        private set 
+        {
+            this.RaiseAndSetIfChanged(ref _isGameStarted, value);
+            this.RaisePropertyChanged(nameof(IsLobbyVisible));
+            this.RaisePropertyChanged(nameof(IsConnectionVisible));
+        }
     }
 
     public bool IsOpponentReady
@@ -94,6 +113,10 @@ public sealed class MainWindowViewModel : ViewModelBase
         get => _isOpponentReady;
         private set => this.RaiseAndSetIfChanged(ref _isOpponentReady, value);
     }
+
+    public bool IsLobbyVisible => IsConnected && !IsGameStarted;
+    public bool IsConnectionVisible => !IsConnected && !IsGameStarted;
+    public bool IsSoloMode => SelectedRole == PlayerRole.Both;
 
     public GameSnapshotDto Snapshot
     {
@@ -147,6 +170,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ReactiveCommand<Unit, Unit> SetSpeedNormalCommand { get; }
     public ReactiveCommand<Unit, Unit> SetSpeedDoubleCommand { get; }
     public ReactiveCommand<Unit, Unit> ConnectCommand { get; }
+    public ReactiveCommand<Unit, Unit> StartSoloCommand { get; }
 
     public void Tick()
     {
@@ -209,25 +233,40 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private async Task ExecuteConnect()
     {
+        IsConnecting = true;
+        LastError = null;
         try
         {
-            _networkClient = new SignalRGameClient(ServerUrl);
+            await Task.Delay(500);
+
+            _networkClient = new SignalRGameClient(ServerUrl.Trim());
             _networkClient.OnPlayerActionReceived += HandleNetworkAction;
-            _networkClient.OnGameStarted += () => IsGameStarted = true;
-            _networkClient.OnOpponentReady += (ready) => IsOpponentReady = ready;
-            _networkClient.OnChatReceived += (sender, message) => 
-            {
-                // TODO: Handle chat
-            };
+            _networkClient.OnGameStarted += () => Avalonia.Threading.Dispatcher.UIThread.Post(() => IsGameStarted = true);
+            _networkClient.OnOpponentReady += (ready) => Avalonia.Threading.Dispatcher.UIThread.Post(() => IsOpponentReady = ready);
+            
             await _networkClient.StartAsync();
             await _networkClient.JoinGame("default-game");
-            IsConnected = true;
-            LastError = null;
+            
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                IsConnected = true;
+                LastError = null;
+            });
         }
         catch (System.Exception ex)
         {
-            LastError = $"Connection failed: {ex.Message}";
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                LastError = $"ERREUR RÉSEAU : {ex.Message}";
+            });
         }
+        finally
+        {
+            IsConnecting = false;
+        }
+    }
+
+    private void ExecuteStartSolo()
+    {
+        IsGameStarted = true;
     }
 
     private void HandleNetworkAction(PlayerAction action)

@@ -110,14 +110,14 @@
 
     <Grid>
         <!-- PHASE 1 : ÉCRAN DE CONNEXION -->
-        <Border Background="{StaticResource BaseBackgroundBrush}" IsVisible="{Binding !IsConnected}" ZIndex="300">
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="40" Width="400">
+        <Border Background="{StaticResource BaseBackgroundBrush}" IsVisible="{Binding IsConnectionVisible}" ZIndex="300">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="40" Width="600">
                 <StackPanel Spacing="10" HorizontalAlignment="Center">
                     <TextBlock Text="TOWER FLUFFY" FontSize="48" FontWeight="Black" Foreground="{StaticResource AccentBrush}" LetterSpacing="8" HorizontalAlignment="Center" />
                     <TextBlock Text="PROTOCOLE DE CONNEXION RÉSEAU" FontSize="12" Opacity="0.5" FontWeight="Bold" LetterSpacing="2" HorizontalAlignment="Center" />
                 </StackPanel>
 
-                <Border Classes="panel" Padding="30" CornerRadius="20">
+                <Border Classes="panel" Padding="30" CornerRadius="20" Width="450" HorizontalAlignment="Center">
                     <StackPanel Spacing="20">
                         <StackPanel Spacing="8">
                             <TextBlock Text="ADRESSE DU SERVEUR" FontSize="10" FontWeight="Bold" Opacity="0.6" />
@@ -133,10 +133,20 @@
                             </ComboBox>
                         </StackPanel>
 
-                        <Button Classes="game" HorizontalAlignment="Stretch" Content="ÉTABLIR LA CONNEXION" Command="{Binding ConnectCommand}" Padding="15" FontWeight="Bold" />
+                        <Button Classes="game" HorizontalAlignment="Stretch" Command="{Binding ConnectCommand}" Padding="15" FontWeight="Bold" IsEnabled="{Binding !IsConnecting}" IsVisible="{Binding !IsSoloMode}">
+                            <Grid>
+                                <TextBlock Text="ÉTABLIR LA CONNEXION" IsVisible="{Binding !IsConnecting}" />
+                                <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsConnecting}" HorizontalAlignment="Center">
+                                    <ProgressBar IsIndeterminate="True" Width="20" Height="2" VerticalAlignment="Center" Background="#20FFFFFF" Foreground="White" />
+                                    <TextBlock Text="ÉTABLISSEMENT..." />
+                                </StackPanel>
+                            </Grid>
+                        </Button>
+
+                        <Button Classes="game" HorizontalAlignment="Stretch" Content="LANCER LE JEU (SOLO)" Command="{Binding StartSoloCommand}" Padding="15" FontWeight="Bold" IsVisible="{Binding IsSoloMode}" />
                         
-                        <Border Classes="hudChip" BorderBrush="{StaticResource DangerBrush}" Background="#20FF0000" IsVisible="{Binding LastError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                            <TextBlock Text="{Binding LastError}" FontSize="11" Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" HorizontalAlignment="Center" />
+                        <Border Classes="hudChip" BorderBrush="{StaticResource DangerBrush}" Background="#D0800000" IsVisible="{Binding LastError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Padding="10">
+                            <TextBlock Text="{Binding LastError}" FontSize="12" Foreground="White" FontWeight="Bold" TextWrapping="Wrap" HorizontalAlignment="Center" />
                         </Border>
                     </StackPanel>
                 </Border>
@@ -146,12 +156,7 @@
         </Border>
 
         <!-- PHASE 2 : LOBBY / SALLE D'ATTENTE -->
-        <Border Background="{StaticResource BaseBackgroundBrush}" IsVisible="{Binding IsConnected}" IsEnabled="{Binding !IsGameStarted}" ZIndex="200">
-            <Border.Styles>
-                <Style Selector="Border[IsEnabled=False]">
-                    <Setter Property="IsVisible" Value="False" />
-                </Style>
-            </Border.Styles>
+        <Border Background="{StaticResource BaseBackgroundBrush}" IsVisible="{Binding IsLobbyVisible}" ZIndex="200">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="40" Width="500">
                 <TextBlock Text="SALLE D'ATTENTE" FontSize="32" FontWeight="Black" HorizontalAlignment="Center" LetterSpacing="4" />
                 
