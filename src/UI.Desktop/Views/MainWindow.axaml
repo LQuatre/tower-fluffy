@@ -1,0 +1,223 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TowerFluffy.UI.Desktop.ViewModels"
+    xmlns:controls="using:TowerFluffy.UI.Desktop.Controls"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="TowerFluffy.UI.Desktop.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        SystemDecorations="None"
+        Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+        Title="TowerFluffy.UI.Desktop">
+
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Window.Styles>
+        <Style Selector="Button.game">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="10,6" />
+        </Style>
+        <Style Selector="Button.game:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+        <Style Selector="Button.game:pressed">
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseLowBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+
+        <Style Selector="Button.windowctl">
+            <Setter Property="Width" Value="34" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Button.windowctl:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+
+        <Style Selector="Border.hudChip">
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseLowBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="10,6" />
+        </Style>
+
+        <Style Selector="TextBlock.hudLabel">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Opacity" Value="0.75" />
+        </Style>
+        <Style Selector="TextBlock.hudValue">
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
+        <Style Selector="TextBlock.hudValueSmall">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
+
+        <Style Selector="TextBlock.panelTitle">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
+        <Style Selector="TextBlock.muted">
+            <Setter Property="Opacity" Value="0.75" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*" ColumnDefinitions="220,*,220" Margin="12" RowSpacing="12" ColumnSpacing="12">
+        <Border Grid.Row="0" Grid.ColumnSpan="3" Padding="10"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Name="TitleBar"
+                PointerPressed="TitleBar_OnPointerPressed">
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto" ColumnSpacing="10" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Border Classes="hudChip" Margin="0,0,4,0">
+                        <StackPanel>
+                            <TextBlock Classes="hudLabel" Text="Base" />
+                            <TextBlock Classes="hudValue" Text="{Binding Snapshot.Hud.BaseHealth}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Classes="hudChip" Margin="0,0,4,0">
+                        <StackPanel>
+                            <TextBlock Classes="hudLabel" Text="Vague" />
+                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                <TextBlock Classes="hudValue" Text="{Binding Snapshot.Hud.WaveNumber}" />
+                                <TextBlock Classes="hudValueSmall" Text="/" Opacity="0.6" />
+                                <TextBlock Classes="hudValueSmall" Text="{Binding Snapshot.Hud.TotalWaves}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Classes="hudChip" Margin="0,0,4,0">
+                        <StackPanel>
+                            <TextBlock Classes="hudLabel" Text="Phase" />
+                            <TextBlock Classes="hudValueSmall" Text="{Binding Snapshot.Hud.Phase}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Classes="hudChip" Margin="0,0,4,0">
+                        <StackPanel>
+                            <TextBlock Classes="hudLabel" Text="Issue" />
+                            <TextBlock Classes="hudValueSmall" Text="{Binding Snapshot.Hud.Outcome}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Classes="hudChip" Margin="8,0,4,0">
+                        <StackPanel>
+                            <TextBlock Classes="hudLabel" Text="Vitesse" />
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <Button Classes="game" Content="0.5x" Command="{Binding SetSpeedHalfCommand}" PointerPressed="TitleBarButton_OnPointerPressed" />
+                                <Button Classes="game" Content="1x" Command="{Binding SetSpeedNormalCommand}" PointerPressed="TitleBarButton_OnPointerPressed" />
+                                <Button Classes="game" Content="2x" Command="{Binding SetSpeedDoubleCommand}" PointerPressed="TitleBarButton_OnPointerPressed" />
+                                <TextBlock Classes="muted" Text="{Binding SpeedSetting}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Classes="hudChip">
+                        <StackPanel>
+                            <TextBlock Classes="hudLabel" Text="Actions" />
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Button Classes="game" Content="Skip" Command="{Binding SkipPreparationCommand}" PointerPressed="TitleBarButton_OnPointerPressed" />
+                                <Button Classes="game" Content="Reset" Command="{Binding ResetCommand}" PointerPressed="TitleBarButton_OnPointerPressed" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Button Classes="windowctl" Content="_" Click="Minimize_OnClick" PointerPressed="TitleBarButton_OnPointerPressed" />
+                    <Button Classes="windowctl" Content="X" Click="Close_OnClick" PointerPressed="TitleBarButton_OnPointerPressed" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Grid.Column="0" Padding="10"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                BorderThickness="1"
+                CornerRadius="10">
+            <StackPanel Spacing="8">
+                <TextBlock Classes="panelTitle" Text="Défenseur" />
+
+                <Border Classes="hudChip">
+                    <StackPanel>
+                        <TextBlock Classes="hudLabel" Text="Or" />
+                        <TextBlock Classes="hudValue" Text="{Binding Snapshot.Hud.DefenderGold}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="hudChip">
+                    <StackPanel Spacing="4">
+                        <TextBlock Classes="hudLabel" Text="Construction" />
+                        <TextBlock Classes="muted" Text="Clique sur la carte pour placer une tour." />
+                        <TextBlock Classes="muted" Text="(Tour de base)" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Grid.Column="1" Padding="10"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                BorderThickness="1"
+                CornerRadius="10"
+                ClipToBounds="True">
+            <controls:GameBoardControl Snapshot="{Binding Snapshot}" PlaceTowerCommand="{Binding PlaceTowerCommand}" />
+        </Border>
+
+        <Border Grid.Row="1" Grid.Column="2" Padding="10"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                BorderThickness="1"
+                CornerRadius="10">
+            <StackPanel Spacing="8">
+                <TextBlock Classes="panelTitle" Text="Attaquant" />
+
+                <Border Classes="hudChip">
+                    <StackPanel>
+                        <TextBlock Classes="hudLabel" Text="Budget" />
+                        <TextBlock Classes="hudValue" Text="{Binding Snapshot.Hud.AttackerBudget}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="hudChip">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="hudLabel" Text="Déploiement" />
+                        <Button Classes="game" Content="Envoyer Grunt" Command="{Binding SendGruntCommand}" />
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Classes="muted" Text="Fenêtre (ticks)" />
+                            <TextBlock Classes="hudValueSmall" Text="{Binding Snapshot.Hud.WaveSendTicksRemaining}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="hudChip">
+                    <StackPanel Spacing="4">
+                        <TextBlock Classes="hudLabel" Text="Erreur" />
+                        <TextBlock Text="{Binding LastError}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+    </Grid>
+
+</Window>
