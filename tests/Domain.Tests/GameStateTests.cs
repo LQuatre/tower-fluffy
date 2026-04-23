@@ -1,5 +1,6 @@
 using System;
 using TowerFluffy.Domain.Simulation;
+using TowerFluffy.Domain.Match;
 using Xunit;
 
 namespace TowerFluffy.Domain.Tests;
@@ -96,6 +97,7 @@ public sealed class GameStateTests
             LootGold: new Gold(0));
         var tower = new Tower(
             Id: 2,
+            Type: TowerType.BasicShooter,
             Position: new GridPosition(0, 1),
             Stats: new TowerStats(Cost: new Gold(0), DamagePerShot: new Damage(0), Range: 0, CooldownTicksBetweenShots: 0),
             Health: new Health(10),
@@ -140,6 +142,7 @@ public sealed class GameStateTests
             LootGold: new Gold(0));
         var tower = new Tower(
             Id: 2,
+            Type: TowerType.BasicShooter,
             Position: new GridPosition(0, 1),
             Stats: new TowerStats(Cost: new Gold(0), DamagePerShot: new Damage(0), Range: 0, CooldownTicksBetweenShots: 0),
             Health: new Health(4),
@@ -182,6 +185,7 @@ public sealed class GameStateTests
             LootGold: new Gold(0));
         var tower = new Tower(
             Id: 2,
+            Type: TowerType.BasicShooter,
             Position: new GridPosition(0, 1),
             Stats: new TowerStats(Cost: new Gold(0), DamagePerShot: new Damage(3), Range: 10_000, CooldownTicksBetweenShots: 0),
             Health: new Health(10),
