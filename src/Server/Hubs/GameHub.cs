@@ -26,7 +26,8 @@ public class GameHub : Hub<IGameClient>, IGameHub
         if (readyCount >= 2)
         {
             var seed = new Random().Next();
-            await Clients.All.ReceiveGameStarted(seed);
+            var startTime = DateTime.UtcNow.Ticks;
+            await Clients.All.ReceiveGameStarted(seed, startTime);
         }
     }
 

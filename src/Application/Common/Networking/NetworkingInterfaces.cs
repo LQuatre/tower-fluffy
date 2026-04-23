@@ -16,7 +16,7 @@ public interface IGameClient
     Task ReceiveCombatEvent(CombatEvent @event);
     Task ReceiveChat(string sender, string message);
     Task ReceivePlayerAction(PlayerAction action);
-    Task ReceiveGameStarted(int seed);
+    Task ReceiveGameStarted(int seed, long startTimeUtc);
     Task ReceiveOpponentReady(bool isReady);
 }
 
@@ -28,7 +28,8 @@ public record PlayerAction(
     int? Y = null,
     int? UnitType = null,
     int? OldX = null,
-    int? OldY = null);
+    int? OldY = null,
+    long? Tick = null);
 
 public enum PlayerActionKind
 {
