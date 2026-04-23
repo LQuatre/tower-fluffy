@@ -82,6 +82,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             this.RaiseAndSetIfChanged(ref _isInGameRoom, value);
             this.RaisePropertyChanged(nameof(IsLobbyVisible));
             this.RaisePropertyChanged(nameof(IsWaitingRoomVisible));
+            this.RaisePropertyChanged(nameof(IsConnectionVisible));
         }
     }
 
