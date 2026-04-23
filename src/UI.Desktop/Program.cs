@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using ReactiveUI.Avalonia;
 using System;
 
@@ -19,5 +19,7 @@ sealed class Program
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace()
-            .UseReactiveUI();
+            .UseReactiveUI()
+            .UseWebView();
+    }
 }

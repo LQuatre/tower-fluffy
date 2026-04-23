@@ -4,6 +4,7 @@
         xmlns:controls="using:TowerFluffy.UI.Desktop.Controls"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:wv="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls.WebView"
         mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
         x:Class="TowerFluffy.UI.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -157,59 +158,25 @@
             </StackPanel>
         </Border>
 
-        <!-- PHASE 2 : LOBBY / LISTE DES PARTIES -->
+        <!-- PHASE 2 : LOBBY / LISTE DES PARTIES (WEB VERSION) -->
         <Border Background="{StaticResource BaseBackgroundBrush}" IsVisible="{Binding IsLobbyVisible}" ZIndex="200">
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="30" Width="600">
-                <StackPanel Spacing="10" HorizontalAlignment="Center">
-                    <TextBlock Text="LOBBY CENTRAL" FontSize="32" FontWeight="Black" HorizontalAlignment="Center" LetterSpacing="4" />
-                    <TextBlock Text="SÉLECTIONNEZ UNE MISSION OU CRÉEZ-EN UNE" FontSize="10" Opacity="0.5" FontWeight="Bold" LetterSpacing="2" HorizontalAlignment="Center" />
-                </StackPanel>
-
-                <Border Classes="panel" Padding="20">
-                    <StackPanel Spacing="15">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Text="PARTIES DISPONIBLES" FontWeight="Bold" Opacity="0.6" VerticalAlignment="Center" />
-                            <Button Grid.Column="1" Classes="game" Content="Rafraîchir" Command="{Binding RefreshGamesCommand}" />
-                        </Grid>
-                        
-                        <ListBox ItemsSource="{Binding AvailableGames}" Background="Transparent" MaxHeight="300">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Classes="panel" Margin="0,4" Padding="12" Background="#10FFFFFF">
-                                        <Grid ColumnDefinitions="*,Auto,Auto">
-                                            <StackPanel>
-                                                <TextBlock Text="{Binding GameId}" FontWeight="Bold" />
-                                                <TextBlock Text="{Binding PlayerCount, StringFormat='{}{0} joueur(s)'}" FontSize="10" Opacity="0.6" />
-                                            </StackPanel>
-                                            
-                                            <TextBlock Grid.Column="1" Text="DÉMARRÉE" Foreground="{StaticResource AccentBrush}" IsVisible="{Binding IsStarted}" VerticalAlignment="Center" Margin="0,0,15,0" FontSize="10" FontWeight="Bold" />
-                                            
-                                            <Button Grid.Column="2" Classes="game" Content="REJOINDRE" 
-                                                    Command="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext).JoinSpecificGameCommand}" 
-                                                    CommandParameter="{Binding GameId}"
-                                                    IsEnabled="{Binding !IsStarted}" />
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-
-                        <Separator Background="#20FFFFFF" Height="1" />
-
-                        <StackPanel Spacing="10">
-                            <TextBlock Text="CRÉER UNE NOUVELLE MISSION" FontSize="10" FontWeight="Bold" Opacity="0.6" />
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                <TextBox x:Name="NewGameId" Watermark="Nom de la partie..." Background="#10FFFFFF" />
-                                <Button Grid.Column="1" Classes="game" Content="CRÉER" 
-                                        Command="{Binding JoinSpecificGameCommand}" 
-                                        CommandParameter="{Binding #NewGameId.Text}" />
-                            </Grid>
+            <Grid RowDefinitions="Auto,*">
+                <Border Grid.Row="0" Classes="panel" Margin="20,20,20,0" Padding="15">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Orientation="Horizontal" Spacing="20">
+                            <TextBlock Text="NAVIGATEUR DE SECTEURS" FontWeight="Black" VerticalAlignment="Center" LetterSpacing="2" />
+                            <Border Classes="hudChip" Background="#2000F2FF">
+                                <TextBlock Text="PROD_STREAM" FontSize="10" FontWeight="Bold" Foreground="{StaticResource DefenderBrush}" />
+                            </Border>
                         </StackPanel>
-                    </StackPanel>
+                        <Button Grid.Column="1" Classes="game" Content="DÉCONNEXION" Command="{Binding ReplayCommand}" />
+                    </Grid>
                 </Border>
-                
-                <Button Classes="game" Content="DÉCONNEXION" HorizontalAlignment="Center" Opacity="0.5" />
-            </StackPanel>
+
+                <Border Grid.Row="1" Classes="panel" Margin="20" ClipToBounds="True">
+                    <wv:WebView Url="http://vps.lquatre.fr:3000" />
+                </Border>
+            </Grid>
         </Border>
 
         <!-- PHASE 2.5 : WAITING ROOM (En attente d'adversaire) -->
