@@ -1,102 +1,42 @@
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Collections.Generic;
 using NetCoreAudio;
 
 namespace TowerFluffy.UI.Desktop;
 
 public static class SoundEffects
 {
-    private static DateTime _lastLaser = DateTime.MinValue;
-    private static DateTime _lastFlame = DateTime.MinValue;
-    private static readonly object _lock = new();
-    
-    private static readonly Player _themePlayer = new();
-    private static readonly Player _laserPlayer = new();
-    private static readonly Player _flamePlayer = new();
-
-    private static string? _laserPath;
-    private static string? _flamePath;
+    private static readonly Player _player = new Player();
+    private static string? _themePath;
 
     public static void Initialize()
     {
-        try
+        var baseDir = AppContext.BaseDirectory;
+        _themePath = Path.Combine(baseDir, "Assets", "Sounds", "theme_futur.mp3");
+        
+        if (!File.Exists(_themePath))
         {
-            Console.WriteLine("[Audio] Initialisation du système sonore multiplateforme...");
-            
-            string? soundsDir = GetSoundsDirectory();
-            if (soundsDir == null)
-            {
-                Console.WriteLine("[Audio] ERREUR : Impossible de localiser le dossier Assets/Sounds.");
-                return;
-            }
-
-            // 1. Thème
-            string themePath = Path.Combine(soundsDir, "theme_futur.mp3");
-            if (File.Exists(themePath))
-            {
-                _themePlayer.Play(themePath);
-                // Note: NetCoreAudio ne gère pas nativement le volume ou la boucle facilement sans event
-                // Pour simplifier ici, on lance juste le son.
-                Console.WriteLine("[Audio] Thème musical démarré.");
-            }
-
-            // 2. Cache des chemins pour les bruitages
-            _laserPath = Path.Combine(soundsDir, "tir_laser.wav");
-            _flamePath = Path.Combine(soundsDir, "lance_flamme.wav");
-
-            Console.WriteLine("[Audio] Systèmes de bruitages prêts.");
+            Console.WriteLine($"[Audio] Erreur : Fichier introuvable {_themePath}");
         }
-        catch (Exception ex)
+    }
+
+    public static void PlayTheme()
+    {
+        if (_themePath != null && File.Exists(_themePath))
         {
-            Console.WriteLine($"[Audio] Erreur d'initialisation sonore : {ex.Message}");
+            _player.Play(_themePath).ContinueWith(t => {
+                if (t.IsCompleted) PlayTheme();
+            });
         }
     }
 
     public static void StopTheme()
     {
-        if (_themePlayer.Playing) _themePlayer.Stop();
+        _player.Stop();
     }
 
-    private static string? GetSoundsDirectory()
-    {
-        string[] possibleDirs = {
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "Sounds"),
-            Path.Combine(Directory.GetCurrentDirectory(), "src", "UI.Desktop", "Assets", "Sounds"),
-            Path.Combine(Directory.GetCurrentDirectory(), "Assets", "Sounds")
-        };
-
-        foreach (var dir in possibleDirs)
-        {
-            if (Directory.Exists(dir)) return dir;
-        }
-        return null;
-    }
-
-    public static void PlayPiou()
-    {
-        if (string.IsNullOrEmpty(_laserPath)) return;
-
-        lock (_lock)
-        {
-            if ((DateTime.Now - _lastLaser).TotalMilliseconds < 100) return; // Plus de délai car pas de pool
-            _lastLaser = DateTime.Now;
-            
-            try { _laserPlayer.Play(_laserPath); } catch { }
-        }
-    }
-
-    public static void PlayFlamme()
-    {
-        if (string.IsNullOrEmpty(_flamePath)) return;
-
-        lock (_lock)
-        {
-            if ((DateTime.Now - _lastFlame).TotalMilliseconds < 150) return;
-            _lastFlame = DateTime.Now;
-            
-            try { _flamePlayer.Play(_flamePath); } catch { }
-        }
-    }
+    public static void PlayLaser() {}
+    public static void PlayFlame() {}
+    public static void PlayFlamme() {} // Alias pour compatibilité
+    public static void PlayPiou() {}   // Attendu par le ViewModel
 }

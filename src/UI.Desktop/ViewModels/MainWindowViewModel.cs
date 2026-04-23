@@ -508,11 +508,18 @@ public class ReadyToColorConverter : Avalonia.Data.Converters.IValueConverter
 
     public object? Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
     {
-        if (value is bool ready && ready)
+        bool ready = value is bool b && b;
+        
+        if (parameter is string p && p == "StatusText")
         {
-            return Avalonia.Media.Brush.Parse("#00F2FF"); // DefenderColor
+            return ready ? "PRÊT" : "ATTENTE";
         }
-        return Avalonia.Media.Brush.Parse("#40FFFFFF"); // Muted/Empty
+
+        if (ready)
+        {
+            return Avalonia.Media.Brush.Parse("#10B981"); // Emerald
+        }
+        return Avalonia.Media.Brush.Parse("#374151"); // Muted Gray
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
@@ -531,10 +538,10 @@ public class TowerTypeToBrushConverter : Avalonia.Data.Converters.IValueConverte
         {
             if (currentType.ToString() == targetTypeStr)
             {
-                return Avalonia.Media.Brush.Parse("#00F2FF"); // Cyan quand sélectionné
+                return Avalonia.Media.Brush.Parse("#00A3FF"); // Blue selection
             }
         }
-        return Avalonia.Media.Brush.Parse("#20FFFFFF"); // Gris transparent par défaut
+        return Avalonia.Media.Brush.Parse("#1F242E"); // Dark Slate
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
