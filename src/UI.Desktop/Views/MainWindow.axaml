@@ -13,7 +13,7 @@
             Background="#020408"
             Width="1400" Height="850"
             WindowStartupLocation="CenterScreen"
-            Title="TOWER FLUFFY - TACTICAL UPLINK">
+            Title="TOWER FLUFFY - LIAISON TACTIQUE">
 
     <Window.Resources>
         <vm:ReadyToColorConverter x:Key="ReadyToColorConverter" />
@@ -26,9 +26,8 @@
     </Window.Resources>
 
     <Grid>
-        <!-- TACTICAL BACKGROUND LAYER -->
+        <!-- COUCHE DE FOND TACTIQUE -->
         <Grid ZIndex="-1">
-            <!-- SCANLINES EFFECT -->
             <Rectangle Fill="#0AFFFFFF" Opacity="0.05">
                 <Rectangle.Fill>
                     <VisualBrush TileMode="Tile" SourceRect="0,0,1,2" DestinationRect="0,0,1,2">
@@ -38,22 +37,20 @@
                     </VisualBrush>
                 </Rectangle.Fill>
             </Rectangle>
-            
-            <!-- AMBIENT GLOWS -->
             <Canvas Opacity="0.15">
-                <Ellipse Width="800" Height="800" Fill="#1000A3FF" Canvas.Left="-200" Canvas.Top="-200"><Ellipse.Effect><BlurEffect Radius="150"/></Ellipse.Effect></Ellipse>
+                <Ellipse Width="800" Height="800" Fill="#1000A3FF" Canvas.Left="-200" Canvas.Top="-100"><Ellipse.Effect><BlurEffect Radius="150"/></Ellipse.Effect></Ellipse>
                 <Ellipse Width="600" Height="600" Fill="#10FFB000" Canvas.Right="-100" Canvas.Bottom="-100"><Ellipse.Effect><BlurEffect Radius="150"/></Ellipse.Effect></Ellipse>
             </Canvas>
         </Grid>
 
-        <!-- MAIN TERMINAL INTERFACE -->
+        <!-- INTERFACE TERMINAL PRINCIPALE -->
         <Border IsVisible="{Binding IsConnectionVisible}" Padding="60">
             <Grid RowDefinitions="Auto, *">
-                <!-- TOP BAR / HEADER -->
+                <!-- BARRE SUPÉRIEURE / EN-TÊTE -->
                 <Grid Grid.Row="0" ColumnDefinitions="Auto, *, Auto" Margin="0,0,0,40">
                     <StackPanel Grid.Column="0" Spacing="5">
-                        <TextBlock Text="UPLINK STATUS: SECURE" FontSize="10" Foreground="{StaticResource BlueBrush}" FontWeight="Bold" LetterSpacing="2" />
-                        <TextBlock Text="PROTOCOL: FLUFFY-v1.1" FontSize="10" Opacity="0.4" />
+                        <TextBlock Text="STATUT LIAISON : SÉCURISÉ" FontSize="10" Foreground="{StaticResource BlueBrush}" FontWeight="Bold" LetterSpacing="2" />
+                        <TextBlock Text="PROTOCOLE : FLUFFY-v1.1" FontSize="10" Opacity="0.4" />
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" HorizontalAlignment="Center">
@@ -63,37 +60,38 @@
                             </TextBlock.Effect>
                         </TextBlock>
                         <Rectangle Height="1" Fill="{StaticResource BlueBrush}" Width="400" Opacity="0.3" Margin="0,10" />
-                        <TextBlock Text="COMMS &amp; DEPLOYMENT CENTER" FontSize="12" Foreground="{StaticResource AmberBrush}" FontWeight="Bold" LetterSpacing="8" HorizontalAlignment="Center" />
+                        <TextBlock Text="CENTRE DE COMMANDEMENT ET DÉPLOIEMENT" FontSize="12" Foreground="{StaticResource AmberBrush}" FontWeight="Bold" LetterSpacing="8" HorizontalAlignment="Center" />
                     </StackPanel>
 
                     <StackPanel Grid.Column="2" Spacing="5" HorizontalAlignment="Right">
-                        <TextBlock Text="SECTOR: LQUATRE-PRIME" FontSize="10" Foreground="{StaticResource BlueBrush}" FontWeight="Bold" HorizontalAlignment="Right" />
-                        <TextBlock Text="ENCRYPTION: MSG-PACK" FontSize="10" Opacity="0.4" HorizontalAlignment="Right" />
+                        <TextBlock Text="SECTEUR : LQUATRE-PRIME" FontSize="10" Foreground="{StaticResource BlueBrush}" FontWeight="Bold" HorizontalAlignment="Right" />
+                        <TextBlock Text="CHIFFREMENT : MSG-PACK" FontSize="10" Opacity="0.4" HorizontalAlignment="Right" />
                     </StackPanel>
                 </Grid>
 
-                <!-- TWO-COLUMN COMMAND CENTER -->
+                <!-- CENTRE DE COMMANDE À DEUX COLONNES -->
                 <Grid Grid.Row="1" ColumnDefinitions="*, 1.2*" ColumnSpacing="40" MaxWidth="1300" HorizontalAlignment="Center">
                     
-                    <!-- LEFT PANEL: NETWORK OPERATIONS -->
+                    <!-- COLONNE GAUCHE : OPÉRATIONS RÉSEAU -->
                     <Grid Grid.Column="0" RowDefinitions="Auto, *">
-                        <!-- DECORATIVE CORNERS -->
                         <Border BorderBrush="{StaticResource BlueBrush}" BorderThickness="2,2,0,0" Width="20" Height="20" HorizontalAlignment="Left" VerticalAlignment="Top" />
                         <Border BorderBrush="{StaticResource BlueBrush}" BorderThickness="0,0,2,2" Width="20" Height="20" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
                         
                         <StackPanel Spacing="30" Margin="20">
                             <StackPanel Spacing="15">
-                                <TextBlock Text="[ 01 ] SIGNAL UPLINK" FontWeight="Black" FontSize="14" Foreground="{StaticResource BlueBrush}" />
+                                <TextBlock Text="[ 01 ] FLUX DE DONNÉES" FontWeight="Black" FontSize="14" Foreground="{StaticResource BlueBrush}" />
                                 <Grid ColumnDefinitions="*, Auto" ColumnSpacing="15">
-                                    <TextBox Text="{Binding ServerUrl}" Background="#15FFFFFF" BorderBrush="#30FFFFFF" CornerRadius="0" Padding="10" />
-                                    <Button Grid.Column="1" Content="SCAN NETWORK" Command="{Binding ConnectCommand}" Classes="Flat" Background="{StaticResource BlueBrush}" Foreground="Black" FontWeight="Bold" CornerRadius="0" />
+                                    <TextBox Text="{Binding ServerUrl}" IsReadOnly="True" Background="#15FFFFFF" BorderBrush="#30FFFFFF" CornerRadius="0" Padding="10" />
+                                    <Border Background="{StaticResource BlueBrush}" Padding="15,0" VerticalAlignment="Stretch">
+                                        <TextBlock Text="LIAISON ACTIVE" Foreground="Black" FontWeight="Bold" VerticalAlignment="Center" FontSize="10" />
+                                    </Border>
                                 </Grid>
                             </StackPanel>
 
                             <StackPanel Spacing="15">
                                 <Grid ColumnDefinitions="*, Auto">
-                                    <TextBlock Text="[ 02 ] ACTIVE OPERATIONS" FontWeight="Black" FontSize="14" Foreground="{StaticResource BlueBrush}" VerticalAlignment="Center" />
-                                    <Button Grid.Column="1" Content="REFRESH" Command="{Binding RefreshGamesCommand}" IsEnabled="{Binding IsConnected}" Classes="Basic" FontSize="10" Foreground="{StaticResource AmberBrush}" />
+                                    <TextBlock Text="[ 02 ] MISSIONS DISPONIBLES" FontWeight="Black" FontSize="14" Foreground="{StaticResource BlueBrush}" VerticalAlignment="Center" />
+                                    <Button Grid.Column="1" Content="ACTUALISER" Command="{Binding RefreshGamesCommand}" IsEnabled="{Binding IsConnected}" Classes="Basic" FontSize="10" Foreground="{StaticResource AmberBrush}" />
                                 </Grid>
 
                                 <ListBox ItemsSource="{Binding AvailableGames}" Background="#08FFFFFF" Height="350" BorderBrush="#20FFFFFF" BorderThickness="1">
@@ -104,12 +102,12 @@
                                                     <StackPanel Spacing="2">
                                                         <TextBlock Text="{Binding GameId}" FontWeight="Bold" FontSize="16" Foreground="{StaticResource AmberBrush}" />
                                                         <StackPanel Orientation="Horizontal" Spacing="15">
-                                                            <TextBlock Text="{Binding PlayerCount, StringFormat='POP: {0}/2'}" FontSize="10" Opacity="0.6" />
-                                                            <TextBlock Text="STATUS: READY" FontSize="10" Foreground="#00FF00" IsVisible="{Binding !IsStarted}" FontWeight="Bold" />
-                                                            <TextBlock Text="STATUS: DEPLOYED" FontSize="10" Foreground="#FF3C00" IsVisible="{Binding IsStarted}" FontWeight="Bold" />
+                                                            <TextBlock Text="{Binding PlayerCount, StringFormat='UNITÉS : {0}/2'}" FontSize="10" Opacity="0.6" />
+                                                            <TextBlock Text="ÉTAT : ATTENTE" FontSize="10" Foreground="#00FF00" IsVisible="{Binding !IsStarted}" FontWeight="Bold" />
+                                                            <TextBlock Text="ÉTAT : EN COMBAT" FontSize="10" Foreground="#FF3C00" IsVisible="{Binding IsStarted}" FontWeight="Bold" />
                                                         </StackPanel>
                                                     </StackPanel>
-                                                    <Button Grid.Column="1" Content="INTERCEPT" Classes="Flat" IsVisible="{Binding !IsStarted}" 
+                                                    <Button Grid.Column="1" Content="INTERCEPTER" Classes="Flat" IsVisible="{Binding !IsStarted}" 
                                                             Command="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext).JoinSpecificGameCommand}" 
                                                             CommandParameter="{Binding GameId}" Background="{StaticResource AmberBrush}" Foreground="Black" FontWeight="Black" CornerRadius="0" />
                                                 </Grid>
@@ -120,7 +118,7 @@
 
                                 <Border IsVisible="{Binding !IsConnected}" Height="350" Background="#05FFFFFF" BorderBrush="#20FFFFFF" BorderThickness="1">
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="20">
-                                        <TextBlock Text="OFFLINE - AWAITING SIGNAL" Opacity="0.3" FontWeight="Black" LetterSpacing="2" />
+                                        <TextBlock Text="SYNCHRONISATION EN COURS..." Opacity="0.3" FontWeight="Black" LetterSpacing="2" />
                                         <ProgressBar IsIndeterminate="True" Width="150" IsVisible="{Binding IsConnecting}" Foreground="{StaticResource BlueBrush}" />
                                     </StackPanel>
                                 </Border>
@@ -128,30 +126,29 @@
                         </StackPanel>
                     </Grid>
 
-                    <!-- RIGHT PANEL: COMBAT READY -->
+                    <!-- COLONNE DROITE : PRÉPARATION AU COMBAT -->
                     <Grid Grid.Column="1">
-                        <!-- DECORATIVE CORNERS -->
                         <Border BorderBrush="{StaticResource AmberBrush}" BorderThickness="2,2,0,0" Width="20" Height="20" HorizontalAlignment="Left" VerticalAlignment="Top" />
                         <Border BorderBrush="{StaticResource AmberBrush}" BorderThickness="0,0,2,2" Width="20" Height="20" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
                         
                         <StackPanel Spacing="40" Margin="30">
                             <StackPanel Spacing="30">
-                                <TextBlock Text="[ 03 ] COMBAT UNIT CONFIGURATION" FontWeight="Black" FontSize="14" Foreground="{StaticResource AmberBrush}" />
+                                <TextBlock Text="[ 03 ] CONFIGURATION DE L'UNITÉ" FontWeight="Black" FontSize="14" Foreground="{StaticResource AmberBrush}" />
                                 
                                 <StackPanel Spacing="15">
-                                    <TextBlock Text="MISSION PROFILE" FontSize="11" Opacity="0.6" LetterSpacing="2" />
+                                    <TextBlock Text="PROFIL DE MISSION" FontSize="11" Opacity="0.6" LetterSpacing="2" />
                                     <ComboBox SelectedIndex="{Binding SelectedRole}" HorizontalAlignment="Stretch" Background="#15FFFFFF" BorderBrush="{StaticResource AmberBrush}" BorderThickness="1" CornerRadius="0">
-                                        <ComboBoxItem>SOLO TRAINING (DEF + ATK)</ComboBoxItem>
-                                        <ComboBoxItem>STRIKE TEAM (ATTACKER)</ComboBoxItem>
-                                        <ComboBoxItem>DEFENSE SQUAD (DEFENDER)</ComboBoxItem>
+                                        <ComboBoxItem>ENTRAÎNEMENT SOLO (DÉFENSE + ATTAQUE)</ComboBoxItem>
+                                        <ComboBoxItem>UNITÉ D'ASSAUT (ATTAQUANT)</ComboBoxItem>
+                                        <ComboBoxItem>UNITÉ DE PROTECTION (DÉFENSEUR)</ComboBoxItem>
                                     </ComboBox>
                                 </StackPanel>
 
                                 <StackPanel Spacing="15" IsVisible="{Binding !IsSoloMode}">
-                                    <TextBlock Text="WAR ROOM IDENTIFIER" FontSize="11" Opacity="0.6" LetterSpacing="2" />
+                                    <TextBlock Text="IDENTIFIANT DE LA SALLE DE GUERRE" FontSize="11" Opacity="0.6" LetterSpacing="2" />
                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="15">
-                                        <TextBox x:Name="RoomName" Watermark="ENTER CODE..." Background="#15FFFFFF" BorderBrush="#30FFFFFF" CornerRadius="0" IsEnabled="{Binding IsConnected}" Padding="10" />
-                                        <Button Grid.Column="1" Content="INITIATE UPLINK" Command="{Binding JoinSpecificGameCommand}" 
+                                        <TextBox x:Name="RoomName" Watermark="ENTREZ LE CODE..." Background="#15FFFFFF" BorderBrush="#30FFFFFF" CornerRadius="0" IsEnabled="{Binding IsConnected}" Padding="10" />
+                                        <Button Grid.Column="1" Content="INITIER LA LIAISON" Command="{Binding JoinSpecificGameCommand}" 
                                                 CommandParameter="{Binding #RoomName.Text}" IsEnabled="{Binding IsConnected}" Classes="Flat" Background="{StaticResource AmberBrush}" Foreground="Black" FontWeight="Black" CornerRadius="0" />
                                     </Grid>
                                 </StackPanel>
@@ -160,7 +157,7 @@
                             <Rectangle Height="1" Fill="#20FFFFFF" />
 
                             <StackPanel VerticalAlignment="Bottom" Spacing="20">
-                                <!-- LARGE ACTION BUTTON -->
+                                <!-- BOUTON D'ACTION PRINCIPAL -->
                                 <Button IsVisible="{Binding IsSoloMode}" Command="{Binding StartSoloCommand}" 
                                         HorizontalAlignment="Stretch" Height="120" Background="#10FFB000" BorderBrush="{StaticResource AmberBrush}" BorderThickness="2" CornerRadius="0">
                                     <StackPanel Orientation="Horizontal" Spacing="30" HorizontalAlignment="Center">
@@ -168,16 +165,16 @@
                                             <Path Data="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z" Fill="{StaticResource AmberBrush}" Width="40" Height="40" Stretch="Uniform" />
                                         </Canvas>
                                         <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Text="EXECUTE OPERATION" FontSize="32" FontWeight="Black" Foreground="{StaticResource AmberBrush}" LetterSpacing="5" />
-                                            <TextBlock Text="CONFIRM DEPLOYMENT TO LOCAL SECTOR" FontSize="10" Foreground="{StaticResource AmberBrush}" Opacity="0.5" HorizontalAlignment="Center" />
+                                            <TextBlock Text="LANCER L'OPÉRATION" FontSize="32" FontWeight="Black" Foreground="{StaticResource AmberBrush}" LetterSpacing="5" />
+                                            <TextBlock Text="DÉPLOIEMENT IMMÉDIAT DANS LE SECTEUR LOCAL" FontSize="10" Foreground="{StaticResource AmberBrush}" Opacity="0.5" HorizontalAlignment="Center" />
                                         </StackPanel>
                                     </StackPanel>
                                 </Button>
 
                                 <Border IsVisible="{Binding !IsSoloMode}" Padding="30" Background="#08FFFFFF" BorderBrush="#20FFFFFF" BorderThickness="1">
                                     <StackPanel Spacing="10">
-                                        <TextBlock Text="MULTI-USER INTERFACE ACTIVE" FontWeight="Black" Foreground="{StaticResource AmberBrush}" HorizontalAlignment="Center" LetterSpacing="2" />
-                                        <TextBlock Text="Select an active operation from the left terminal or create a new war room to begin synchronization." Opacity="0.4" TextAlignment="Center" TextWrapping="Wrap" FontSize="11" />
+                                        <TextBlock Text="INTERFACE MULTI-JOUEURS ACTIVE" FontWeight="Black" Foreground="{StaticResource AmberBrush}" HorizontalAlignment="Center" LetterSpacing="2" />
+                                        <TextBlock Text="Sélectionnez une opération sur le terminal gauche ou créez une nouvelle salle pour synchroniser les unités." Opacity="0.4" TextAlignment="Center" TextWrapping="Wrap" FontSize="11" />
                                     </StackPanel>
                                 </Border>
 
@@ -195,76 +192,76 @@
             </Grid>
         </Border>
 
-        <!-- WAITING ROOM (TACTICAL SYNC) -->
-        <Border Background="#F0020408" IsVisible="{Binding IsWaitingRoomVisible}" ZIndex="250">
-            <Grid Width="700" Height="500">
-                <Border BorderBrush="{StaticResource BlueBrush}" BorderThickness="2" Opacity="0.2" />
-                <StackPanel Spacing="50" VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <TextBlock Text="SYNCHRONIZING TACTICAL DATA" FontSize="32" FontWeight="Black" Foreground="{StaticResource BlueBrush}" HorizontalAlignment="Center" LetterSpacing="10" />
-                    
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="40">
-                        <!-- PILOT -->
-                        <StackPanel Grid.Column="0" Spacing="20">
-                            <Border Width="150" Height="150" BorderBrush="{Binding IsReady, Converter={StaticResource ReadyToColorConverter}}" BorderThickness="2" Padding="10">
-                                <Grid>
-                                    <Rectangle Fill="{Binding IsReady, Converter={StaticResource ReadyToColorConverter}}" Opacity="0.1" />
-                                    <TextBlock Text="LOCAL" VerticalAlignment="Top" HorizontalAlignment="Center" FontSize="10" FontWeight="Bold" Margin="0,10" />
-                                    <TextBlock Text="READY" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="24" FontWeight="Black" IsVisible="{Binding IsReady}" />
-                                    <TextBlock Text="AWAITING" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="18" FontWeight="Black" Opacity="0.3" IsVisible="{Binding !IsReady}" />
-                                </Grid>
-                            </Border>
-                            <CheckBox Content="READY" IsChecked="{Binding IsReady}" Foreground="{StaticResource BlueBrush}" FontWeight="Bold" HorizontalAlignment="Center" />
-                        </StackPanel>
-
-                        <!-- OPPONENT -->
-                        <StackPanel Grid.Column="1" Spacing="20">
-                            <Border Width="150" Height="150" BorderBrush="{Binding IsOpponentReady, Converter={StaticResource ReadyToColorConverter}}" BorderThickness="2" Padding="10">
-                                <Grid>
-                                    <Rectangle Fill="{Binding IsOpponentReady, Converter={StaticResource ReadyToColorConverter}}" Opacity="0.1" />
-                                    <TextBlock Text="REMOTE" VerticalAlignment="Top" HorizontalAlignment="Center" FontSize="10" FontWeight="Bold" Margin="0,10" />
-                                    <TextBlock Text="READY" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="24" FontWeight="Black" IsVisible="{Binding IsOpponentReady}" />
-                                    <TextBlock Text="SEARCHING" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="18" FontWeight="Black" Opacity="0.3" IsVisible="{Binding !IsOpponentReady}" />
-                                </Grid>
-                            </Border>
-                            <TextBlock Text="WAITING FOR PEER..." Opacity="0.5" HorizontalAlignment="Center" FontSize="10" />
-                        </StackPanel>
-                    </Grid>
-
-                    <ProgressBar IsIndeterminate="True" Width="400" Foreground="{StaticResource BlueBrush}" />
-                    <Button Content="ABORT MISSION" Command="{Binding ReplayCommand}" Classes="Basic" Foreground="{StaticResource HudDanger}" HorizontalAlignment="Center" />
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <!-- IN-GAME HUD (Remains minimal but tactical) -->
-        <Grid IsVisible="{Binding IsGameStarted}" Margin="40">
-            <Grid RowDefinitions="Auto, *">
-                <Border Grid.Row="0" BorderBrush="{StaticResource BlueBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,20" Margin="0,0,0,30">
-                    <Grid ColumnDefinitions="Auto, *, Auto">
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="TOWER FLUFFY TACTICAL HUD" FontWeight="Black" FontSize="14" Foreground="{StaticResource BlueBrush}" />
-                            <TextBlock Text="LIVE FEED // SECURE LINK" FontSize="9" Opacity="0.4" />
-                        </StackPanel>
+            <!-- SALLE D'ATTENTE (SYNCHRO TACTIQUE) -->
+            <Border Background="#F0020408" IsVisible="{Binding IsWaitingRoomVisible}" ZIndex="250">
+                <Grid Width="800" Height="600">
+                    <Border BorderBrush="{StaticResource BlueBrush}" BorderThickness="2" Opacity="0.2" />
+                    <StackPanel Spacing="50" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="SYNCHRONISATION DES UNITÉS" FontSize="28" FontWeight="Black" Foreground="{StaticResource BlueBrush}" HorizontalAlignment="Center" LetterSpacing="10" TextWrapping="Wrap" TextAlignment="Center" />
                         
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="40">
-                            <StackPanel>
-                                <TextBlock Text="CORE INTEGRITY" FontSize="10" Opacity="0.5" HorizontalAlignment="Center" />
-                                <TextBlock Text="{Binding Snapshot.Hud.BaseHealth}" FontSize="28" FontWeight="Black" Foreground="{StaticResource HudDanger}" HorizontalAlignment="Center" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="60">
+                            <!-- PILOTE LOCAL -->
+                            <StackPanel Grid.Column="0" Spacing="20">
+                                <Border Width="180" Height="180" BorderBrush="{Binding IsReady, Converter={StaticResource ReadyToColorConverter}}" BorderThickness="2" Padding="10">
+                                    <Grid>
+                                        <Rectangle Fill="{Binding IsReady, Converter={StaticResource ReadyToColorConverter}}" Opacity="0.1" />
+                                        <TextBlock Text="PILOTE LOCAL" VerticalAlignment="Top" HorizontalAlignment="Center" FontSize="10" FontWeight="Bold" Margin="0,10" />
+                                        <TextBlock Text="PRÊT" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="32" FontWeight="Black" IsVisible="{Binding IsReady}" />
+                                        <TextBlock Text="ATTENTE" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="24" FontWeight="Black" Opacity="0.3" IsVisible="{Binding !IsReady}" />
+                                    </Grid>
+                                </Border>
+                                <CheckBox Content="PRÊT AU COMBAT" IsChecked="{Binding IsReady}" Foreground="{StaticResource BlueBrush}" FontWeight="Bold" HorizontalAlignment="Center" />
                             </StackPanel>
-                            <StackPanel>
-                                <TextBlock Text="WAVE PHASE" FontSize="10" Opacity="0.5" HorizontalAlignment="Center" />
-                                <TextBlock Text="{Binding Snapshot.Hud.WaveNumber}" FontSize="28" FontWeight="Black" Foreground="{StaticResource AmberBrush}" HorizontalAlignment="Center" />
+
+                            <!-- ADVERSAIRE -->
+                            <StackPanel Grid.Column="1" Spacing="20">
+                                <Border Width="180" Height="180" BorderBrush="{Binding IsOpponentReady, Converter={StaticResource ReadyToColorConverter}}" BorderThickness="2" Padding="10">
+                                    <Grid>
+                                        <Rectangle Fill="{Binding IsOpponentReady, Converter={StaticResource ReadyToColorConverter}}" Opacity="0.1" />
+                                        <TextBlock Text="ADVERSAIRE DISTANT" VerticalAlignment="Top" HorizontalAlignment="Center" FontSize="10" FontWeight="Bold" Margin="0,10" />
+                                        <TextBlock Text="PRÊT" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="32" FontWeight="Black" IsVisible="{Binding IsOpponentReady}" />
+                                        <TextBlock Text="RECHERCHE" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="24" FontWeight="Black" Opacity="0.3" IsVisible="{Binding !IsOpponentReady}" />
+                                    </Grid>
+                                </Border>
+                                <TextBlock Text="RECHERCHE DE SIGNAL PEER-TO-PEER..." Opacity="0.5" HorizontalAlignment="Center" FontSize="10" />
                             </StackPanel>
-                        </StackPanel>
+                        </Grid>
 
-                        <Button Grid.Column="2" Content="TERMINATE" Command="{Binding ReplayCommand}" Classes="Basic" Foreground="{StaticResource HudDanger}" />
-                    </Grid>
-                </Border>
+                        <ProgressBar IsIndeterminate="True" Width="500" Foreground="{StaticResource BlueBrush}" Height="4" />
+                        <Button Content="ABANDONNER L'OPÉRATION" Command="{Binding ReplayCommand}" Classes="Basic" Foreground="{StaticResource HudDanger}" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Grid>
+            </Border>
 
-                <Viewbox Grid.Row="1" Stretch="Uniform">
-                    <controls:GameBoardControl Snapshot="{Binding Snapshot}" PlaceTowerCommand="{Binding PlaceTowerCommand}" />
-                </Viewbox>
-            </Grid>
+            <!-- HUD EN JEU -->
+            <Grid IsVisible="{Binding IsGameStarted}" Margin="40">
+                <Grid RowDefinitions="Auto, *">
+                    <Border Grid.Row="0" BorderBrush="{StaticResource BlueBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,20" Margin="0,0,0,30">
+                        <Grid ColumnDefinitions="Auto, *, Auto">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="TOWER FLUFFY - HUD TACTIQUE" FontWeight="Black" FontSize="14" Foreground="{StaticResource BlueBrush}" />
+                                <TextBlock Text="FLUX TEMPS RÉEL // LIAISON SÉCURISÉE" FontSize="9" Opacity="0.4" />
+                            </StackPanel>
+                            
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="40">
+                                <StackPanel>
+                                    <TextBlock Text="INTÉGRITÉ DU CŒUR" FontSize="10" Opacity="0.5" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding Snapshot.Hud.BaseHealth}" FontSize="28" FontWeight="Black" Foreground="{StaticResource HudDanger}" HorizontalAlignment="Center" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="PHASE DE VAGUE" FontSize="10" Opacity="0.5" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding Snapshot.Hud.WaveNumber}" FontSize="28" FontWeight="Black" Foreground="{StaticResource AmberBrush}" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <Button Grid.Column="2" Content="TERMINER" Command="{Binding ReplayCommand}" Classes="Basic" Foreground="{StaticResource HudDanger}" />
+                        </Grid>
+                    </Border>
+
+                    <Viewbox Grid.Row="1" Stretch="Uniform">
+                        <controls:GameBoardControl Snapshot="{Binding Snapshot}" PlaceTowerCommand="{Binding PlaceTowerCommand}" />
+                    </Viewbox>
+                </Grid>
         </Grid>
     </Grid>
 </suki:SukiWindow>

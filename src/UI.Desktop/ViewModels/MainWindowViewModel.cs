@@ -52,6 +52,9 @@ public sealed class MainWindowViewModel : ViewModelBase
         JoinSpecificGameCommand = ReactiveCommand.CreateFromTask<string>(ExecuteJoinSpecificGame);
         StartSoloCommand = ReactiveCommand.Create(ExecuteStartSolo);
         ReplayCommand = ReactiveCommand.Create(ExecuteReplay);
+
+        // Connexion automatique au démarrage
+        Task.Run(async () => await ExecuteConnect());
     }
 
     public string ServerUrl
