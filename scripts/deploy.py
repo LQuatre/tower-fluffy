@@ -12,26 +12,30 @@ def run(command, cwd=REPO_ROOT):
     subprocess.run(command, cwd=cwd, check=True)
 
 def create_launchers(publish_base):
-    # Raccourci Windows
+    # --- Raccourcis à la RACINE du dossier publish ---
+    
+    # Windows
+    with open(publish_base / "Lancer_Jeu_Windows.bat", "w", encoding="utf-8") as f:
+        f.write("@echo off\nstart \"\" \"Windows\\TowerFluffy.UI.Desktop.exe\"\n")
+    
+    # Linux
+    with open(publish_base / "Lancer_Jeu_Linux.sh", "w", encoding="utf-8") as f:
+        f.write("#!/bin/bash\nchmod +x ./Linux/TowerFluffy.UI.Desktop\n./Linux/TowerFluffy.UI.Desktop\n")
+    
+    # MacOS (Détection auto à la racine)
+    with open(publish_base / "Lancer_Jeu_MacOS.sh", "w", encoding="utf-8") as f:
+        f.write("#!/bin/bash\nARCH=$(uname -m)\nif [ \"$ARCH\" == \"arm64\" ]; then\n    chmod +x ./MacOS_AppleSilicon/TowerFluffy.UI.Desktop\n    ./MacOS_AppleSilicon/TowerFluffy.UI.Desktop\nelse\n    chmod +x ./MacOS_Intel/TowerFluffy.UI.Desktop\n    ./MacOS_Intel/TowerFluffy.UI.Desktop\nfi\n")
+
+    # --- Également à l'intérieur de chaque dossier (pour plus de sécurité) ---
     win_dir = publish_base / "Windows"
     if win_dir.exists():
-        with open(win_dir / "Lancer_Jeu_Windows.bat", "w", encoding="utf-8") as f:
+        with open(win_dir / "Lancer_Direct.bat", "w", encoding="utf-8") as f:
             f.write("@echo off\nstart \"\" \"TowerFluffy.UI.Desktop.exe\"\n")
     
-    # Raccourci Linux
     linux_dir = publish_base / "Linux"
     if linux_dir.exists():
-        launcher = linux_dir / "Lancer_Jeu_Linux.sh"
-        with open(launcher, "w", encoding="utf-8") as f:
+        with open(linux_dir / "Lancer_Direct.sh", "w", encoding="utf-8") as f:
             f.write("#!/bin/bash\nchmod +x ./TowerFluffy.UI.Desktop\n./TowerFluffy.UI.Desktop\n")
-    
-    # Raccourci MacOS
-    for mac_folder in ["MacOS_Intel", "MacOS_AppleSilicon"]:
-        mac_dir = publish_base / mac_folder
-        if mac_dir.exists():
-            launcher = mac_dir / "Lancer_Jeu_MacOS.sh"
-            with open(launcher, "w", encoding="utf-8") as f:
-                f.write("#!/bin/bash\nchmod +x ./TowerFluffy.UI.Desktop\n./TowerFluffy.UI.Desktop\n")
 
 def main():
     message = input("Message du commit (ex: 'MAJ graphismes') : ")
@@ -50,6 +54,7 @@ def main():
     publish_dir = REPO_ROOT / "publish"
     if publish_dir.exists():
         shutil.rmtree(publish_dir)
+    os.makedirs(publish_dir, exist_ok=True)
 
     print("\n--- [3/3] GÉNÉRATION DES BUILDS MULTI-PLATEFORMES ---")
     platforms = {
@@ -69,11 +74,11 @@ def main():
             "-o", f"./publish/{folder}"
         ])
 
-    print("\n--- [FINAL] CRÉATION DES RACCOURCIS DE LANCEMENT ---")
+    print("\n--- [FINAL] CRÉATION DES RACCOURCIS DANS /PUBLISH/ ---")
     create_launchers(publish_dir)
 
     print("\n✅ OPÉRATION TERMINÉE !")
-    print("Les nouveaux builds (avec leurs raccourcis) sont dans 'publish/'.")
+    print("Les nouveaux builds et raccourcis sont dans le dossier 'publish/'.")
     print("Votre code est à jour sur GitHub.")
 
 if __name__ == "__main__":
