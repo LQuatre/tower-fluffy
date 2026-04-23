@@ -1,6 +1,7 @@
 using System;
 using TowerFluffy.Domain.Match;
 using TowerFluffy.Domain.Simulation;
+using System.Linq;
 using Xunit;
 
 namespace TowerFluffy.Domain.Tests;
@@ -61,7 +62,7 @@ public sealed class MatchStateTests
         var match = MatchState.CreateNew(config, map);
         var started = match.SkipPreparation().Value!;
 
-        var sent = started.SendUnit(UnitType.Grunt);
+        var sent = started.SendUnit(UnitType.Soldat);
 
         Assert.True(sent.IsSuccess);
         Assert.Single(sent.Value!.Simulation.Units);
@@ -81,10 +82,13 @@ public sealed class MatchStateTests
             unitSpeedPerTick: 0);
         var map = DefaultMapFactory.Create();
 
+        var buildableCell = Enumerable.Range(0, map.Grid.Width)
+            .SelectMany(x => Enumerable.Range(0, map.Grid.Height).Select(y => new GridPosition(x, y)))
+            .First(p => map.IsBuildable(p));
         var match = MatchState.CreateNew(config, map)
-            .PlaceTower(TowerType.BasicShooter, new GridPosition(0, 4)).Value!
+            .PlaceTower(TowerType.BasicShooter, buildableCell).Value!
             .SkipPreparation().Value!
-            .SendUnit(UnitType.Grunt).Value!;
+            .SendUnit(UnitType.Soldat).Value!;
 
         var goldBefore = match.DefenderGold;
         var after = match.Tick();
@@ -108,10 +112,13 @@ public sealed class MatchStateTests
             unitAttackCooldown: 0);
         var map = DefaultMapFactory.Create();
 
+        var buildableCell = Enumerable.Range(0, map.Grid.Width)
+            .SelectMany(x => Enumerable.Range(0, map.Grid.Height).Select(y => new GridPosition(x, y)))
+            .First(p => map.IsBuildable(p));
         var match = MatchState.CreateNew(config, map)
-            .PlaceTower(TowerType.BasicShooter, new GridPosition(0, 4)).Value!
+            .PlaceTower(TowerType.BasicShooter, buildableCell).Value!
             .SkipPreparation().Value!
-            .SendUnit(UnitType.Grunt).Value!;
+            .SendUnit(UnitType.Soldat).Value!;
 
         var budgetBefore = match.AttackerBudget;
         var after = match.Tick();
@@ -141,6 +148,7 @@ public sealed class MatchStateTests
             BudgetBonusPerTowerDestroyed: new Budget(budgetBonusPerTowerDestroyed),
             StartingGold: new Gold(100),
             StartingBaseHealth: new Health(10),
+            GoldPerBaseDamageTaken: 0,
             Towers: new[]
             {
                 new TowerDefinition(
@@ -155,7 +163,7 @@ public sealed class MatchStateTests
             Units: new[]
             {
                 new UnitDefinition(
-                    UnitType.Grunt,
+                    UnitType.Soldat,
                     Cost: new Budget(10),
                     Health: new Health(unitHealth),
                     SpeedPerTick: unitSpeedPerTick,

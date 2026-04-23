@@ -11,14 +11,20 @@ public sealed class GameSession
     private readonly Map _map;
     private MatchState _state;
 
-    public GameSession(GameConfig config, Map map)
+    public GameSession(GameConfig config, Map map, int seed = 0)
     {
         _config = config ?? throw new ArgumentNullException(nameof(config));
         _map = map ?? throw new ArgumentNullException(nameof(map));
-        _state = MatchState.CreateNew(_config, _map);
+        _state = MatchState.CreateNew(_config, _map, seed);
     }
 
-    public static GameSession CreateMvp() => new(GameConfig.CreateMvpDefaults(), DefaultMapFactory.Create());
+    public static GameSession CreateMvp(int? seed = null) 
+    {
+        var finalSeed = seed ?? new Random().Next();
+        var config = GameConfig.CreateMvpDefaults();
+        var map = DefaultMapFactory.Create(1, finalSeed);
+        return new GameSession(config, map, finalSeed);
+    }
 
     public GameSnapshotDto Snapshot => GameSnapshotMapper.ToDto(_state);
 

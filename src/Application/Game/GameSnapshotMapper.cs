@@ -60,6 +60,7 @@ public static class GameSnapshotMapper
                 Tick: e.Tick.Value,
                 Kind: (CombatEventKindDto)e.Kind,
                 SourceId: e.SourceId,
+                SourceTowerType: e.SourceTowerType.HasValue ? (TowerTypeDto)e.SourceTowerType.Value : null,
                 TargetId: e.TargetId,
                 From: ToWorldPositionDto(e.From),
                 To: ToWorldPositionDto(e.To),

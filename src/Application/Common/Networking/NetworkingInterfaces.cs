@@ -16,7 +16,7 @@ public interface IGameClient
     Task ReceiveCombatEvent(CombatEvent @event);
     Task ReceiveChat(string sender, string message);
     Task ReceivePlayerAction(PlayerAction action);
-    Task ReceiveGameStarted();
+    Task ReceiveGameStarted(int seed);
     Task ReceiveOpponentReady(bool isReady);
 }
 

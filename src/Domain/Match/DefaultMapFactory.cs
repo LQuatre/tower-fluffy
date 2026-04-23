@@ -5,60 +5,66 @@ namespace TowerFluffy.Domain.Match;
 
 public static class DefaultMapFactory
 {
-    public static Map Create(int level = 1)
+    public static Map Create(int level = 1, int? seed = null)
     {
         const int width = 16;
         const int height = 10;
         const int cellSize = 40;
+        
+        // Si un seed est fourni, on l'utilise pour la reproductibilité (multiplayer)
+        // Sinon on utilise l'aléatoire par défaut (solo)
+        var rand = seed.HasValue ? new System.Random(seed.Value) : new System.Random();
 
         var grid = new Grid(Width: width, Height: height, CellSize: cellSize);
-        var blocked = new List<GridPosition>();
-        TowerFluffy.Domain.Simulation.Path path;
+        var pathCells = new List<GridPosition>();
+        var blocked = new HashSet<GridPosition>();
 
-        if (level == 2)
+        // 1. Génération du chemin (Random Walk)
+        var currentY = rand.Next(2, height - 2);
+        var current = new GridPosition(0, currentY);
+        pathCells.Add(current);
+        blocked.Add(current);
+
+        while (current.X < width - 1)
         {
-            // L-shape path
-            path = new TowerFluffy.Domain.Simulation.Path(new[]
+            // Déterminer les poids des directions
+            // Plus le niveau est élevé, plus on a de chances de faire des détours verticaux
+            double verticalChance = Math.Min(0.45, (level - 1) * 0.05 + 0.1);
+            
+            bool moveVertical = rand.NextDouble() < verticalChance;
+            
+            if (moveVertical)
             {
-                new WorldPosition(cellSize / 2, (height / 2) * cellSize + cellSize / 2),
-                new WorldPosition((width / 2) * cellSize + cellSize / 2, (height / 2) * cellSize + cellSize / 2),
-                new WorldPosition((width / 2) * cellSize + cellSize / 2, cellSize / 2),
-                new WorldPosition((width - 1) * cellSize + cellSize / 2, cellSize / 2),
-            });
+                int dy = rand.Next(0, 2) == 0 ? -1 : 1;
+                var next = new GridPosition(current.X, current.Y + dy);
+                
+                // Vérifier les limites et ne pas revenir en arrière ou se coller au chemin existant
+                if (next.Y >= 1 && next.Y < height - 1 && !blocked.Contains(next))
+                {
+                    current = next;
+                    pathCells.Add(current);
+                    blocked.Add(current);
+                    continue; // On peut encore bouger verticalement ou repartir à droite
+                }
+            }
 
-            // Block path cells
-            for (int x = 0; x <= width / 2; x++) blocked.Add(new GridPosition(x, height / 2));
-            for (int y = 0; y <= height / 2; y++) blocked.Add(new GridPosition(width / 2, y));
-            for (int x = width / 2; x < width; x++) blocked.Add(new GridPosition(x, 0));
+            // Toujours avancer à droite si on ne bouge pas verticalement
+            current = new GridPosition(current.X + 1, current.Y);
+            pathCells.Add(current);
+            blocked.Add(current);
         }
-        else if (level >= 3)
+
+        // 2. Conversion des cellules en Waypoints (WorldPositions)
+        // On simplifie le chemin pour n'avoir que les points de virage
+        var waypoints = new List<WorldPosition>();
+        foreach (var cell in pathCells)
         {
-            // S-shape path
-            path = new TowerFluffy.Domain.Simulation.Path(new[]
-            {
-                new WorldPosition(cellSize / 2, 2 * cellSize + cellSize / 2),
-                new WorldPosition((width - 2) * cellSize + cellSize / 2, 2 * cellSize + cellSize / 2),
-                new WorldPosition((width - 2) * cellSize + cellSize / 2, (height - 2) * cellSize + cellSize / 2),
-                new WorldPosition(cellSize / 2, (height - 2) * cellSize + cellSize / 2),
-            });
-
-            for (int x = 0; x < width - 1; x++) blocked.Add(new GridPosition(x, 2));
-            for (int y = 2; y < height - 1; y++) blocked.Add(new GridPosition(width - 2, y));
-            for (int x = 0; x < width - 1; x++) blocked.Add(new GridPosition(x, height - 2));
+            waypoints.Add(new WorldPosition(
+                (cell.X * cellSize) + (cellSize / 2),
+                (cell.Y * cellSize) + (cellSize / 2)));
         }
-        else
-        {
-            // Level 1: Straight line
-            const int pathRow = 5;
-            var y = (pathRow * cellSize) + (cellSize / 2);
-            path = new TowerFluffy.Domain.Simulation.Path(new[]
-            {
-                new WorldPosition(cellSize / 2, y),
-                new WorldPosition((width * cellSize) - (cellSize / 2), y),
-            });
 
-            for (var x = 0; x < width; x++) blocked.Add(new GridPosition(x, pathRow));
-        }
+        var path = new TowerFluffy.Domain.Simulation.Path(waypoints.ToArray());
 
         return new Map(path, grid, blocked);
     }

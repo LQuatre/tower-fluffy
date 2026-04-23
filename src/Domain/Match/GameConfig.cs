@@ -14,6 +14,7 @@ public sealed record GameConfig(
     Budget BudgetBonusPerTowerDestroyed,
     Gold StartingGold,
     Health StartingBaseHealth,
+    int GoldPerBaseDamageTaken,
     IReadOnlyList<TowerDefinition> Towers,
     IReadOnlyList<UnitDefinition> Units)
 {
@@ -23,11 +24,12 @@ public sealed record GameConfig(
             TotalWaves: 10,
             PreparationTicks: 60 * 30,
             WaveSendWindowTicks: 60 * 20,
-            BaseWaveBudget: new Budget(100),
+            BaseWaveBudget: new Budget(80),
             WaveBudgetIncrement: new Budget(20),
             BudgetBonusPerTowerDestroyed: new Budget(10),
-            StartingGold: new Gold(200),
+            StartingGold: new Gold(300),
             StartingBaseHealth: new Health(100),
+            GoldPerBaseDamageTaken: 10,
             Towers: new[]
             {
                 new TowerDefinition(
@@ -35,38 +37,38 @@ public sealed record GameConfig(
                     new TowerStats(
                         Cost: new Gold(50),
                         DamagePerShot: new Damage(2),
-                        Range: 200,
+                        Range: 220,
                         CooldownTicksBetweenShots: 20),
-                    Health: new Health(15)),
+                    Health: new Health(40)),
                 new TowerDefinition(
                     TowerType.Flamethrower,
                     new TowerStats(
-                        Cost: new Gold(150),
+                        Cost: new Gold(200),
                         DamagePerShot: new Damage(1),
-                        Range: 100,
-                        CooldownTicksBetweenShots: 1),
-                    Health: new Health(30)),
+                        Range: 160,
+                        CooldownTicksBetweenShots: 12),
+                    Health: new Health(50)),
             },
             Units: new[]
             {
                 new UnitDefinition(
-                    UnitType.Grunt,
-                    Cost: new Budget(10),
+                    UnitType.Soldat,
+                    Cost: new Budget(12),
                     Health: new Health(5),
                     SpeedPerTick: 3,
                     DamageToBase: new Damage(1),
                     DamageToTower: new Damage(2),
-                    AttackRange: 100,
+                    AttackRange: 150,
                     AttackCooldownTicksBetweenAttacks: 40,
                     LootGold: new Gold(10)),
                 new UnitDefinition(
                     UnitType.Brute,
-                    Cost: new Budget(40),
-                    Health: new Health(30),
+                    Cost: new Budget(50),
+                    Health: new Health(40),
                     SpeedPerTick: 1,
                     DamageToBase: new Damage(5),
                     DamageToTower: new Damage(10),
-                    AttackRange: 100,
+                    AttackRange: 180,
                     AttackCooldownTicksBetweenAttacks: 60,
                     LootGold: new Gold(30)),
             });

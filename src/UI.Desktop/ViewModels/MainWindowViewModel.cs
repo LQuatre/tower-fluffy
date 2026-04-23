@@ -13,7 +13,7 @@ namespace TowerFluffy.UI.Desktop.ViewModels;
 
 public sealed class MainWindowViewModel : ViewModelBase
 {
-    private readonly GameSession _session;
+    private GameSession _session;
     private GameSnapshotDto _snapshot;
     private string? _lastError;
     private SignalRGameClient? _networkClient;
@@ -38,7 +38,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         _snapshot = _session.Snapshot;
 
         SkipPreparationCommand = ReactiveCommand.Create(ExecuteSkipPreparation);
-        SendGruntCommand = ReactiveCommand.Create(ExecuteSendGrunt);
+        SendSoldatCommand = ReactiveCommand.Create(ExecuteSendSoldat);
         SendBruteCommand = ReactiveCommand.Create(ExecuteSendBrute);
         PlaceTowerCommand = ReactiveCommand.Create<GridPositionDto>(ExecutePlaceTower);
         SetBasicTowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerTypeDto.BasicShooter; });
@@ -106,6 +106,11 @@ public sealed class MainWindowViewModel : ViewModelBase
             this.RaiseAndSetIfChanged(ref _isGameStarted, value);
             this.RaisePropertyChanged(nameof(IsLobbyVisible));
             this.RaisePropertyChanged(nameof(IsConnectionVisible));
+            
+            if (value)
+            {
+                SoundEffects.StopTheme();
+            }
         }
     }
 
@@ -189,11 +194,24 @@ public sealed class MainWindowViewModel : ViewModelBase
     public TowerTypeDto CurrentTowerType
     {
         get => _currentTowerType;
-        set => this.RaiseAndSetIfChanged(ref _currentTowerType, value);
+        set {
+            this.RaiseAndSetIfChanged(ref _currentTowerType, value);
+            this.RaisePropertyChanged(nameof(CurrentTowerStats));
+        }
     }
 
+    public string CurrentTowerStats => CurrentTowerType switch
+    {
+        TowerTypeDto.BasicShooter => "Dégâts: 2 | Portée: 220 | Cadence: 0.3s | PV: 40",
+        TowerTypeDto.Flamethrower => "Dégâts: 1 | Portée: 160 | Cadence: 0.2s | PV: 50",
+        _ => ""
+    };
+
+    public string SoldatStats => "PV: 5 | Vitesse: 3 | Dégâts: 2 | Portée: 150";
+    public string BruteStats => "PV: 40 | Vitesse: 1 | Dégâts: 10 | Portée: 180";
+
     public ReactiveCommand<Unit, Unit> SkipPreparationCommand { get; }
-    public ReactiveCommand<Unit, Unit> SendGruntCommand { get; }
+    public ReactiveCommand<Unit, Unit> SendSoldatCommand { get; }
     public ReactiveCommand<Unit, Unit> SendBruteCommand { get; }
     public ReactiveCommand<GridPositionDto, Unit> PlaceTowerCommand { get; }
     public ReactiveCommand<Unit, Unit> SetBasicTowerCommand { get; }
@@ -211,6 +229,26 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         _session.Tick(1);
         Snapshot = _session.Snapshot;
+
+        // Effets sonores
+        foreach (var ev in Snapshot.CombatEvents)
+        {
+            if (ev.Kind == CombatEventKindDto.TowerShot)
+            {
+                if (ev.SourceTowerType == TowerTypeDto.Flamethrower)
+                {
+                    SoundEffects.PlayFlamme();
+                }
+                else
+                {
+                    SoundEffects.PlayPiou();
+                }
+            }
+            else if (ev.Kind == CombatEventKindDto.UnitAttackTower || ev.Kind == CombatEventKindDto.UnitHitBase)
+            {
+                SoundEffects.PlayPiou();
+            }
+        }
     }
 
     private void ExecuteSkipPreparation()
@@ -219,11 +257,11 @@ public sealed class MainWindowViewModel : ViewModelBase
         BroadcastAction(PlayerActionKind.SkipPreparation);
     }
 
-    private void ExecuteSendGrunt()
+    private void ExecuteSendSoldat()
     {
         if (!CanSendUnits) return;
-        Apply(_session.SendUnit(UnitTypeDto.Grunt));
-        BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitTypeDto.Grunt);
+        Apply(_session.SendUnit(UnitTypeDto.Soldat));
+        BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitTypeDto.Soldat);
     }
 
     private void ExecuteSendBrute()
@@ -291,7 +329,10 @@ public sealed class MainWindowViewModel : ViewModelBase
 
             _networkClient = new SignalRGameClient(ServerUrl.Trim());
             _networkClient.OnPlayerActionReceived += HandleNetworkAction;
-            _networkClient.OnGameStarted += () => Avalonia.Threading.Dispatcher.UIThread.Post(() => IsGameStarted = true);
+            _networkClient.OnGameStarted += (seed) => Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                _session = GameSession.CreateMvp(seed);
+                IsGameStarted = true;
+            });
             _networkClient.OnOpponentReady += (ready) => Avalonia.Threading.Dispatcher.UIThread.Post(() => IsOpponentReady = ready);
             
             await _networkClient.StartAsync();
