@@ -199,6 +199,12 @@ public sealed class MainWindowViewModel : ViewModelBase
     public string WaveSendTimeFormatted => $"{Snapshot.Hud.WaveSendTicksRemaining / 60.0:F1} sec";
     public bool IsPreparationTimerVisible => Snapshot.Hud.PreparationTicksRemaining > 0;
 
+    // COÛTS TACTIQUES (Synchronisés avec GameConfig)
+    public int BasicTowerCost => 50;
+    public int FlamethrowerCost => 200;
+    public int SoldatCost => 12;
+    public int BruteCost => 50;
+
     public string PhaseFormatted => Snapshot.Hud.Phase switch
     {
         MatchPhaseDto.Preparation => "Préparation",

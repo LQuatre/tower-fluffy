@@ -247,13 +247,13 @@
                             <Button Command="{Binding SetBasicTowerCommand}" HorizontalAlignment="Stretch" Padding="10" Background="{Binding CurrentTowerType, Converter={StaticResource TowerTypeToBrushConverter}, ConverterParameter=BasicShooter}">
                                 <StackPanel>
                                     <TextBlock Text="TOUR BASIQUE" FontWeight="Bold" />
-                                    <TextBlock Text="Coût: 10" FontSize="10" Opacity="0.6" />
+                                    <TextBlock Text="{Binding BasicTowerCost, StringFormat='Coût: {0}'}" FontSize="10" Opacity="0.6" />
                                 </StackPanel>
                             </Button>
                             <Button Command="{Binding SetFlamethrowerCommand}" HorizontalAlignment="Stretch" Padding="10" Background="{Binding CurrentTowerType, Converter={StaticResource TowerTypeToBrushConverter}, ConverterParameter=Flamethrower}">
                                 <StackPanel>
                                     <TextBlock Text="LANCE-FLAMMES" FontWeight="Bold" />
-                                    <TextBlock Text="Coût: 25" FontSize="10" Opacity="0.6" />
+                                    <TextBlock Text="{Binding FlamethrowerCost, StringFormat='Coût: {0}'}" FontSize="10" Opacity="0.6" />
                                 </StackPanel>
                             </Button>
                         </StackPanel>
@@ -284,13 +284,13 @@
                             <Button Command="{Binding SendSoldatCommand}" HorizontalAlignment="Stretch" Padding="10" IsEnabled="{Binding !IsPreparationTimerVisible}">
                                 <StackPanel>
                                     <TextBlock Text="DÉPLOYER SOLDAT" FontWeight="Bold" />
-                                    <TextBlock Text="Coût: 10" FontSize="10" Opacity="0.6" />
+                                    <TextBlock Text="{Binding SoldatCost, StringFormat='Coût: {0}'}" FontSize="10" Opacity="0.6" />
                                 </StackPanel>
                             </Button>
                             <Button Command="{Binding SendBruteCommand}" HorizontalAlignment="Stretch" Padding="10" IsEnabled="{Binding !IsPreparationTimerVisible}">
                                 <StackPanel>
                                     <TextBlock Text="DÉPLOYER BRUTE" FontWeight="Bold" />
-                                    <TextBlock Text="Coût: 50" FontSize="10" Opacity="0.6" />
+                                    <TextBlock Text="{Binding BruteCost, StringFormat='Coût: {0}'}" FontSize="10" Opacity="0.6" />
                                 </StackPanel>
                             </Button>
                         </StackPanel>
