@@ -1,424 +1,245 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:TowerFluffy.UI.Desktop.ViewModels"
-        xmlns:controls="using:TowerFluffy.UI.Desktop.Controls"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:wv="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls.WebView"
-        mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
-        x:Class="TowerFluffy.UI.Desktop.Views.MainWindow"
-        x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
-        SystemDecorations="None"
-        Background="{StaticResource BaseBackgroundBrush}"
-        Width="1400" Height="750"
-        WindowStartupLocation="CenterScreen"
-        Title="Tower Fluffy - Centre de Commande">
-
-    <Design.DataContext>
-        <vm:MainWindowViewModel/>
-    </Design.DataContext>
+<suki:SukiWindow xmlns="https://github.com/avaloniaui"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:vm="using:TowerFluffy.UI.Desktop.ViewModels"
+            xmlns:controls="using:TowerFluffy.UI.Desktop.Controls"
+            xmlns:suki="using:SukiUI.Controls"
+            xmlns:theme="using:SukiUI.Theme"
+            xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="720"
+            x:Class="TowerFluffy.UI.Desktop.Views.MainWindow"
+            x:DataType="vm:MainWindowViewModel"
+            Icon="avares://TowerFluffy.UI.Desktop/Assets/avalonia-logo.ico"
+            Background="{StaticResource BaseBackgroundBrush}"
+            Width="1400" Height="800"
+            WindowStartupLocation="CenterScreen"
+            Title="Tower Fluffy - Tactical Commander">
 
     <Window.Resources>
         <vm:ReadyToColorConverter x:Key="ReadyToColorConverter" />
         <vm:TowerTypeToBrushConverter x:Key="TowerTypeToBrushConverter" />
-        <Color x:Key="BaseBackgroundColor">#0B0E14</Color>
-        <Color x:Key="PanelBackgroundColor">#161B22</Color>
-        <Color x:Key="DefenderColor">#00F2FF</Color>
-        <Color x:Key="AttackerColor">#FF00E5</Color>
-        <Color x:Key="AccentColor">#FFF600</Color>
-        <Color x:Key="DangerColor">#FF2E2E</Color>
-        
+        <Color x:Key="BaseBackgroundColor">#05080F</Color>
+        <Color x:Key="AccentColor">#00F2FF</Color>
+        <Color x:Key="SecondaryColor">#FF00E5</Color>
         <SolidColorBrush x:Key="BaseBackgroundBrush" Color="{StaticResource BaseBackgroundColor}" />
-        <SolidColorBrush x:Key="PanelBackgroundBrush" Color="{StaticResource PanelBackgroundColor}" Opacity="0.8" />
-        <SolidColorBrush x:Key="DefenderBrush" Color="{StaticResource DefenderColor}" />
-        <SolidColorBrush x:Key="AttackerBrush" Color="{StaticResource AttackerColor}" />
         <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
-        <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
+        <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource SecondaryColor}" />
     </Window.Resources>
 
-    <Window.Styles>
-        <Style Selector="Button.game">
-            <Setter Property="Background" Value="#222831" />
-            <Setter Property="Foreground" Value="White" />
-            <Setter Property="BorderBrush" Value="#393E46" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Padding" Value="12,8" />
-            <Setter Property="CornerRadius" Value="4" />
-        </Style>
-        <Style Selector="Button.game:pointerover">
-            <Setter Property="Background" Value="#393E46" />
-            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-        </Style>
-
-        <Style Selector="Button.windowctl">
-            <Setter Property="Width" Value="34" />
-            <Setter Property="Height" Value="26" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Opacity" Value="0.6" />
-        </Style>
-        <Style Selector="Button.windowctl:pointerover">
-            <Setter Property="Background" Value="#30FFFFFF" />
-            <Setter Property="Opacity" Value="1" />
-        </Style>
-
-        <Style Selector="Border.panel">
-            <Setter Property="Background" Value="{StaticResource PanelBackgroundBrush}" />
-            <Setter Property="BorderBrush" Value="#30FFFFFF" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="12" />
-        </Style>
-
-        <Style Selector="Border.hudChip">
-            <Setter Property="Background" Value="#15FFFFFF" />
-            <Setter Property="BorderBrush" Value="#20FFFFFF" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="6" />
-            <Setter Property="Padding" Value="12,8" />
-        </Style>
-
-        <Style Selector="TextBlock.hudLabel">
-            <Setter Property="FontSize" Value="10" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Opacity" Value="0.5" />
-            <Setter Property="LetterSpacing" Value="0.5" />
-        </Style>
-        <Style Selector="TextBlock.hudValue">
-            <Setter Property="FontSize" Value="20" />
-            <Setter Property="FontWeight" Value="Bold" />
-        </Style>
-        <Style Selector="TextBlock.hudValueSmall">
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="FontWeight" Value="Bold" />
-        </Style>
-
-        <Style Selector="TextBlock.panelTitle">
-            <Setter Property="FontSize" Value="18" />
-            <Setter Property="FontWeight" Value="ExtraBold" />
-            <Setter Property="Margin" Value="0,0,0,12" />
-        </Style>
-        <Style Selector="TextBlock.muted">
-            <Setter Property="Opacity" Value="0.6" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="TextWrapping" Value="Wrap" />
-        </Style>
-        
-        <Style Selector="Border.accentLine">
-            <Setter Property="Height" Value="2" />
-            <Setter Property="Width" Value="30" />
-            <Setter Property="HorizontalAlignment" Value="Left" />
-            <Setter Property="Margin" Value="0,0,0,16" />
-        </Style>
-    </Window.Styles>
-
     <Grid>
-        <!-- PHASE 1 : ÉCRAN DE CONNEXION -->
-        <Border Background="{StaticResource BaseBackgroundBrush}" IsVisible="{Binding IsConnectionVisible}" ZIndex="300">
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="40" Width="600">
+        <!-- BACKGROUND AMBIANCE -->
+        <Canvas ZIndex="-1" Opacity="0.3">
+            <Ellipse Width="600" Height="600" Fill="#2000F2FF" Canvas.Left="-100" Canvas.Top="-100">
+                <Ellipse.Effect>
+                    <BlurEffect Radius="100" />
+                </Ellipse.Effect>
+            </Ellipse>
+            <Ellipse Width="500" Height="500" Fill="#20FF00E5" Canvas.Right="-100" Canvas.Bottom="-100">
+                <Ellipse.Effect>
+                    <BlurEffect Radius="100" />
+                </Ellipse.Effect>
+            </Ellipse>
+        </Canvas>
+
+        <!-- MAIN MENU (TWO COLUMNS) -->
+        <Border IsVisible="{Binding IsConnectionVisible}" ZIndex="300" Padding="50">
+            <StackPanel VerticalAlignment="Center" Spacing="50">
+                <!-- HEADER -->
                 <StackPanel Spacing="10" HorizontalAlignment="Center">
-                    <TextBlock Text="TOWER FLUFFY" FontSize="48" FontWeight="Black" Foreground="{StaticResource AccentBrush}" LetterSpacing="8" HorizontalAlignment="Center" />
-                    <TextBlock Text="PROTOCOLE DE CONNEXION RÉSEAU" FontSize="12" Opacity="0.5" FontWeight="Bold" LetterSpacing="2" HorizontalAlignment="Center" />
+                    <TextBlock Text="TOWER FLUFFY" FontSize="72" FontWeight="Black" LetterSpacing="15" HorizontalAlignment="Center">
+                        <TextBlock.Foreground>
+                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                                <GradientStop Offset="0" Color="{StaticResource AccentColor}" />
+                                <GradientStop Offset="1" Color="{StaticResource SecondaryColor}" />
+                            </LinearGradientBrush>
+                        </TextBlock.Foreground>
+                    </TextBlock>
+                    <TextBlock Text="DÉPLOIEMENT TACTIQUE V1.1" FontSize="14" Opacity="0.5" FontWeight="Bold" LetterSpacing="5" HorizontalAlignment="Center" />
                 </StackPanel>
 
-                <Border Classes="panel" Padding="30" CornerRadius="20" Width="450" HorizontalAlignment="Center">
-                    <StackPanel Spacing="20">
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="ADRESSE DU SERVEUR" FontSize="10" FontWeight="Bold" Opacity="0.6" />
-                            <TextBox Text="{Binding ServerUrl}" Watermark="http://localhost:5000/gameHub" Background="#10FFFFFF" BorderThickness="1" Foreground="White" Padding="12" />
-                        </StackPanel>
+                <Grid ColumnDefinitions="*,1.2*" ColumnSpacing="40" MaxWidth="1200" HorizontalAlignment="Center">
+                    <!-- LEFT: NETWORK & LOBBY -->
+                    <suki:GlassCard Grid.Column="0" VerticalAlignment="Stretch">
+                        <StackPanel Spacing="25">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="SYSTÈME RÉSEAU" FontWeight="Bold" FontSize="12" Opacity="0.7" />
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <TextBox Text="{Binding ServerUrl}" Watermark="URL du Hub..." Classes="Primary" />
+                                    <Button Grid.Column="1" Content="SCANNER" Command="{Binding ConnectCommand}" Classes="Flat" />
+                                </Grid>
+                            </StackPanel>
 
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="CHOISIR VOTRE UNITÉ OPÉRATIONNELLE" FontSize="10" FontWeight="Bold" Opacity="0.6" />
-                            <ComboBox SelectedIndex="{Binding SelectedRole}" HorizontalAlignment="Stretch" Background="#10FFFFFF" Padding="12">
-                                <ComboBoxItem>Contrôle Total (Solo)</ComboBoxItem>
-                                <ComboBoxItem>Division d'Attaque (Attaquant)</ComboBoxItem>
-                                <ComboBoxItem>Division de Défense (Défenseur)</ComboBoxItem>
-                            </ComboBox>
-                        </StackPanel>
+                            <Separator Opacity="0.1" />
 
-                        <Button Classes="game" HorizontalAlignment="Stretch" Command="{Binding ConnectCommand}" Padding="15" FontWeight="Bold" IsEnabled="{Binding !IsConnecting}" IsVisible="{Binding !IsSoloMode}">
-                            <Grid>
-                                <TextBlock Text="ÉTABLIR LA CONNEXION" IsVisible="{Binding !IsConnecting}" />
-                                <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsConnecting}" HorizontalAlignment="Center">
-                                    <ProgressBar IsIndeterminate="True" Width="20" Height="2" VerticalAlignment="Center" Background="#20FFFFFF" Foreground="White" />
-                                    <TextBlock Text="ÉTABLISSEMENT..." />
-                                </StackPanel>
-                            </Grid>
-                        </Button>
+                            <StackPanel Spacing="15">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="MISSIONS ACTIVES" FontWeight="Bold" FontSize="12" Opacity="0.7" VerticalAlignment="Center" />
+                                    <Button Grid.Column="1" Content="RAFRAÎCHIR" Command="{Binding RefreshGamesCommand}" IsEnabled="{Binding IsConnected}" Classes="Basic" FontSize="10" />
+                                </Grid>
 
-                        <Button Classes="game" HorizontalAlignment="Stretch" Content="LANCER LE JEU (SOLO)" Command="{Binding StartSoloCommand}" Padding="15" FontWeight="Bold" IsVisible="{Binding IsSoloMode}" />
-                        
-                        <Border Classes="hudChip" BorderBrush="{StaticResource DangerBrush}" Background="#D0800000" IsVisible="{Binding LastError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Padding="10">
-                            <TextBlock Text="{Binding LastError}" FontSize="12" Foreground="White" FontWeight="Bold" TextWrapping="Wrap" HorizontalAlignment="Center" />
-                        </Border>
-                    </StackPanel>
-                </Border>
-                
-                <TextBlock Text="v1.0 - SignalR MessagePack Edition" FontSize="10" Opacity="0.3" HorizontalAlignment="Center" />
-            </StackPanel>
-        </Border>
+                                <ListBox ItemsSource="{Binding AvailableGames}" Background="Transparent" Height="300" CornerRadius="12">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <suki:GlassCard Margin="0,4" Padding="15">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <StackPanel Spacing="5">
+                                                        <TextBlock Text="{Binding GameId}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource AccentBrush}" />
+                                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                                            <Border Background="#20FFFFFF" CornerRadius="4" Padding="6,2">
+                                                                <TextBlock Text="{Binding PlayerCount, StringFormat='{}{0}/2 Joueurs'}" FontSize="10" Opacity="0.7" />
+                                                            </Border>
+                                                            <TextBlock Text="EN ATTENTE" FontSize="10" Foreground="#00FF00" IsVisible="{Binding !IsStarted}" Opacity="0.8" />
+                                                            <TextBlock Text="EN COURS" FontSize="10" Foreground="{StaticResource SecondaryBrush}" IsVisible="{Binding IsStarted}" FontWeight="Bold" />
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                    <Button Grid.Column="1" Content="REJOINDRE" Classes="Flat" IsVisible="{Binding !IsStarted}" 
+                                                            Command="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext).JoinSpecificGameCommand}" 
+                                                            CommandParameter="{Binding GameId}" />
+                                                </Grid>
+                                            </suki:GlassCard>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
 
-        <!-- PHASE 2 : LOBBY / LISTE DES PARTIES (WEB VERSION) -->
-        <Border Background="{StaticResource BaseBackgroundBrush}" IsVisible="{Binding IsLobbyVisible}" ZIndex="200">
-            <Grid RowDefinitions="Auto,*">
-                <Border Grid.Row="0" Classes="panel" Margin="20,20,20,0" Padding="15">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Orientation="Horizontal" Spacing="20">
-                            <TextBlock Text="NAVIGATEUR DE SECTEURS" FontWeight="Black" VerticalAlignment="Center" LetterSpacing="2" />
-                            <Border Classes="hudChip" Background="#2000F2FF">
-                                <TextBlock Text="PROD_STREAM" FontSize="10" FontWeight="Bold" Foreground="{StaticResource DefenderBrush}" />
-                            </Border>
-                        </StackPanel>
-                        <Button Grid.Column="1" Classes="game" Content="DÉCONNEXION" Command="{Binding ReplayCommand}" />
-                    </Grid>
-                </Border>
-
-                <Border Grid.Row="1" Classes="panel" Margin="20" ClipToBounds="True">
-                    <wv:WebView Url="http://vps.lquatre.fr:3000" />
-                </Border>
-            </Grid>
-        </Border>
-
-        <!-- PHASE 2.5 : WAITING ROOM (En attente d'adversaire) -->
-        <Border Background="{StaticResource BaseBackgroundBrush}" IsVisible="{Binding IsWaitingRoomVisible}" ZIndex="250">
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="40" Width="500">
-                <TextBlock Text="PRÉPARATION DU DÉPLOIEMENT" FontSize="28" FontWeight="Black" HorizontalAlignment="Center" LetterSpacing="4" />
-                
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="20">
-                    <Border Grid.Column="0" Classes="panel" Padding="20">
-                        <StackPanel Spacing="15" HorizontalAlignment="Center">
-                            <TextBlock Text="VOTRE ÉTAT" FontWeight="Bold" Opacity="0.6" HorizontalAlignment="Center" />
-                            <Ellipse Width="40" Height="40" Fill="{Binding IsReady, Converter={x:Static vm:ReadyToColorConverter.Instance}}" />
-                            <TextBlock Text="{Binding SelectedRole}" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" />
-                            <CheckBox Content="PRÊT" IsChecked="{Binding IsReady}" HorizontalAlignment="Center" Foreground="White" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Grid.Column="1" Classes="panel" Padding="20">
-                        <StackPanel Spacing="15" HorizontalAlignment="Center">
-                            <TextBlock Text="ADVERSAIRE" FontWeight="Bold" Opacity="0.6" HorizontalAlignment="Center" />
-                            <Ellipse Width="40" Height="40" Fill="{Binding IsOpponentReady, Converter={x:Static vm:ReadyToColorConverter.Instance}}" />
-                            <TextBlock Text="INCONNU" Opacity="0.5" IsVisible="{Binding !IsOpponentReady}" />
-                            <TextBlock Text="PRÊT" Foreground="{StaticResource DefenderBrush}" FontWeight="Bold" IsVisible="{Binding IsOpponentReady}" />
-                        </StackPanel>
-                    </Border>
-                </Grid>
-
-                <StackPanel Spacing="10">
-                    <ProgressBar IsIndeterminate="True" Height="2" Background="#10FFFFFF" Foreground="{StaticResource AccentBrush}" />
-                    <TextBlock Text="En attente de la synchronisation tactique..." Classes="muted" HorizontalAlignment="Center" />
-                </StackPanel>
-                
-                <Button Classes="game" Content="QUITTER LA SALLE" Command="{Binding ReplayCommand}" HorizontalAlignment="Center" />
-            </StackPanel>
-        </Border>
-
-        <!-- PHASE 3 : INTERFACE DE JEU (Visible uniquement quand IsGameStarted est vrai) -->
-        <Grid RowDefinitions="Auto,*" ColumnDefinitions="Auto,*,Auto" Margin="20" RowSpacing="20" ColumnSpacing="20" IsVisible="{Binding IsGameStarted}">
-            <!-- TOP HUD -->
-            <Border Grid.Row="0" Grid.ColumnSpan="3" Classes="panel" Padding="16,12" PointerPressed="TitleBar_OnPointerPressed">
-                <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Orientation="Horizontal" Spacing="24">
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="Tower Fluffy" FontWeight="Black" FontSize="14" Foreground="{StaticResource AccentBrush}" LetterSpacing="2" />
-                            <TextBlock Text="SIMULATEUR DE BATAILLE" FontSize="9" Opacity="0.5" FontWeight="Bold" />
-                        </StackPanel>
-
-                        <Rectangle Width="1" Height="30" Fill="#20FFFFFF" VerticalAlignment="Center" />
-
-                        <StackPanel Orientation="Horizontal" Spacing="16">
-                            <Border Classes="hudChip">
-                                <StackPanel>
-                                    <TextBlock Classes="hudLabel" Text="PV DU NOYAU" HorizontalAlignment="Center" />
-                                    <TextBlock Classes="hudValue" Text="{Binding Snapshot.Hud.BaseHealth}" Foreground="{StaticResource DangerBrush}" HorizontalAlignment="Center" />
-                                </StackPanel>
-                            </Border>
-
-                            <Border Classes="hudChip">
-                                <StackPanel>
-                                    <TextBlock Classes="hudLabel" Text="Niveau" HorizontalAlignment="Center" />
-                                    <TextBlock Classes="hudValue" Text="{Binding Snapshot.Hud.Level}" Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center" />
-                                </StackPanel>
-                            </Border>
-
-                            <Border Classes="hudChip">
-                                <StackPanel>
-                                    <TextBlock Classes="hudLabel" Text="État de la Vague" HorizontalAlignment="Center" />
-                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock Classes="hudValue" Text="{Binding Snapshot.Hud.WaveNumber}" />
-                                        <TextBlock Classes="hudValueSmall" Text="/" Opacity="0.4" />
-                                        <TextBlock Classes="hudValueSmall" Text="{Binding Snapshot.Hud.TotalWaves}" Opacity="0.6" />
+                                <Border IsVisible="{Binding !IsConnected}" Height="300" Background="#10FFFFFF" CornerRadius="12">
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="15">
+                                        <ProgressBar IsIndeterminate="True" Width="100" IsVisible="{Binding IsConnecting}" />
+                                        <TextBlock Text="EN ATTENTE DE CONNEXION..." Opacity="0.4" FontWeight="Bold" />
                                     </StackPanel>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Classes="hudChip">
-                                <StackPanel>
-                                    <TextBlock Classes="hudLabel" Text="Phase d'Opération" HorizontalAlignment="Center" />
-                                    <TextBlock Classes="hudValueSmall" Text="{Binding PhaseFormatted}" Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center" />
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-
-                        <Rectangle Width="1" Height="30" Fill="#20FFFFFF" VerticalAlignment="Center" />
-
-                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" IsVisible="{Binding CanSkipPreparation}">
-                            <Button Classes="game" Content="Passer Préparation" Command="{Binding SkipPreparationCommand}" PointerPressed="TitleBarButton_OnPointerPressed" />
-                        </StackPanel>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                        <Button Classes="windowctl" Content="—" Click="Minimize_OnClick" PointerPressed="TitleBarButton_OnPointerPressed" />
-                        <Button Classes="windowctl" Content="✕" Click="Close_OnClick" PointerPressed="TitleBarButton_OnPointerPressed" />
-                    </StackPanel>
-                </Grid>
-            </Border>
-
-            <!-- DEFENDER PANEL -->
-            <Border Grid.Row="1" Grid.Column="0" Classes="panel" Padding="20" VerticalAlignment="Top" Width="320" IsVisible="{Binding CanPlaceTower}">
-                <StackPanel Spacing="20">
-                    <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Classes="panelTitle" Text="Défenseur" Foreground="{StaticResource DefenderBrush}" HorizontalAlignment="Center" />
-                        <Border Classes="accentLine" Background="{StaticResource DefenderBrush}" HorizontalAlignment="Center" />
-                    </StackPanel>
-
-                    <Border Classes="hudChip">
-                        <StackPanel HorizontalAlignment="Center">
-                            <TextBlock Classes="hudLabel" Text="Réserve de Nano-Or" HorizontalAlignment="Center" />
-                            <TextBlock Classes="hudValue" Text="{Binding Snapshot.Hud.DefenderGold}" Foreground="{StaticResource DefenderBrush}" HorizontalAlignment="Center" />
-                        </StackPanel>
-                    </Border>
-
-                        <StackPanel Spacing="10" Margin="0,15,0,0">
-                            <TextBlock Text="SÉLECTION DE TOUR" Classes="hudLabel" HorizontalAlignment="Center" FontSize="10" Opacity="0.6"/>
-                            <UniformGrid Columns="2">
-                                <Button Classes="game" Content="Basique" 
-                                        Command="{Binding SetBasicTowerCommand}"
-                                        Background="{Binding CurrentTowerType, Converter={StaticResource TowerTypeToBrushConverter}, ConverterParameter=BasicShooter}"/>
-                                <Button Classes="game" Content="L-Flamme" 
-                                        Command="{Binding SetFlamethrowerCommand}"
-                                        Background="{Binding CurrentTowerType, Converter={StaticResource TowerTypeToBrushConverter}, ConverterParameter=Flamethrower}"/>
-                            </UniformGrid>
-                            
-                            <Button Classes="game" Content="Acheter Tour (50/200 Or)" IsEnabled="False" Opacity="0.5" />
-                        </StackPanel>
-                        <TextBlock Classes="muted" Text="Cliquez sur une cellule vide pour déployer une tour de défense." HorizontalAlignment="Center" TextAlignment="Center" />
-                        
-                        <!-- BLOC DE STATS DÉFENSEUR -->
-                        <Border Classes="hudChip" Background="#1500F2FF" BorderBrush="#3300F2FF" BorderThickness="1" Margin="0,10,0,0">
-                            <StackPanel Spacing="5" Margin="10">
-                                <TextBlock Text="SPÉCIFICATIONS TECHNIQUES" FontSize="10" FontWeight="Bold" Opacity="0.5" HorizontalAlignment="Center" Margin="0,0,0,5"/>
-                                <TextBlock Text="{Binding CurrentTowerStats}" FontSize="11" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                                </Border>
                             </StackPanel>
-                        </Border>
-                    </StackPanel>
-            </Border>
-
-            <!-- GAME BOARD -->
-            <Border Grid.Row="1" Grid.Column="1" Classes="panel" Padding="0" ClipToBounds="True">
-                <Grid RowDefinitions="*,Auto">
-                    <Viewbox Grid.Row="0" Stretch="Uniform">
-                        <controls:GameBoardControl Snapshot="{Binding Snapshot}" PlaceTowerCommand="{Binding PlaceTowerCommand}" Margin="40" />
-                    </Viewbox>
-
-                    <Border Grid.Row="1" Background="Transparent" Padding="0,5,0,15">
-                        <StackPanel HorizontalAlignment="Center" Spacing="2">
-                            <TextBlock Text="{Binding ActivePhaseLabel}" FontSize="11" FontWeight="Bold" Opacity="0.5" HorizontalAlignment="Center" LetterSpacing="2" />
-                            <Grid HorizontalAlignment="Center">
-                                <StackPanel Orientation="Horizontal" Spacing="15" IsVisible="{Binding IsDefenderPhase}">
-                                    <Border Width="30" Height="2" Background="{StaticResource DefenderBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Text="{Binding ActivePhaseTime}" FontSize="36" FontWeight="Black" Foreground="{StaticResource DefenderBrush}" />
-                                    <Border Width="30" Height="2" Background="{StaticResource DefenderBrush}" VerticalAlignment="Center" />
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Spacing="15" IsVisible="{Binding !IsDefenderPhase}">
-                                    <Border Width="30" Height="2" Background="{StaticResource AttackerBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Text="{Binding ActivePhaseTime}" FontSize="36" FontWeight="Black" Foreground="{StaticResource AttackerBrush}" />
-                                    <Border Width="30" Height="2" Background="{StaticResource AttackerBrush}" VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Grid>
                         </StackPanel>
-                    </Border>
-                </Grid>
-            </Border>
+                    </suki:GlassCard>
 
-            <!-- ATTACKER PANEL -->
-            <Border Grid.Row="1" Grid.Column="2" Classes="panel" Padding="20" VerticalAlignment="Top" Width="320" IsVisible="{Binding CanSendUnits}">
-                <StackPanel Spacing="20">
-                    <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Classes="panelTitle" Text="Attaquant" Foreground="{StaticResource AttackerBrush}" HorizontalAlignment="Center" />
-                        <Border Classes="accentLine" Background="{StaticResource AttackerBrush}" HorizontalAlignment="Center" />
-                    </StackPanel>
-
-                    <Border Classes="hudChip">
-                        <StackPanel HorizontalAlignment="Center">
-                            <TextBlock Classes="hudLabel" Text="Budget Énergétique" HorizontalAlignment="Center" />
-                            <TextBlock Classes="hudValue" Text="{Binding Snapshot.Hud.AttackerBudget}" Foreground="{StaticResource AttackerBrush}" HorizontalAlignment="Center" />
-                        </StackPanel>
-                    </Border>
-
-                        <StackPanel Spacing="10" Margin="0,15,0,0">
-                            <TextBlock Text="DÉPLOIEMENT" Classes="hudLabel" HorizontalAlignment="Center" FontSize="10" Opacity="0.6"/>
-                            <Button Classes="game" Content="Envoyer Soldat (12 B)" Command="{Binding SendSoldatCommand}" />
-                            <Button Classes="game" Content="Envoyer Brute (50 B)" Command="{Binding SendBruteCommand}" />
-                        </StackPanel>
-                        <TextBlock Classes="muted" Text="Envoyez des unités pour attaquer la base adverse." HorizontalAlignment="Center" TextAlignment="Center" />
-                        
-                        <!-- BLOC DE STATS ATTAQUANT -->
-                        <Border Classes="hudChip" Background="#15FF00E5" BorderBrush="#33FF00E5" BorderThickness="1" Margin="0,10,0,0">
-                            <StackPanel Spacing="8" Margin="10">
-                                <TextBlock Text="UNITÉS DISPONIBLES" FontSize="10" FontWeight="Bold" Opacity="0.5" HorizontalAlignment="Center" Margin="0,0,0,5"/>
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="SOLDAT:" FontSize="9" FontWeight="Bold" Foreground="{StaticResource AttackerBrush}" />
-                                    <TextBlock Text="{Binding SoldatStats}" FontSize="10" Opacity="0.8" />
+                    <!-- RIGHT: PILOT CONFIG & LAUNCH -->
+                    <suki:GlassCard Grid.Column="1" VerticalAlignment="Stretch" BorderBrush="{StaticResource AccentBrush}" BorderThickness="1">
+                        <StackPanel Spacing="40">
+                            <StackPanel Spacing="20">
+                                <TextBlock Text="CONFIGURATION DE L'UNITÉ" FontWeight="Bold" FontSize="12" Opacity="0.7" />
+                                
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="PROFIL DE MISSION" FontSize="14" />
+                                    <ComboBox SelectedIndex="{Binding SelectedRole}" HorizontalAlignment="Stretch">
+                                        <ComboBoxItem>ENTRAÎNEMENT SOLO (Défense + Attaque)</ComboBoxItem>
+                                        <ComboBoxItem>UNITÉ D'ASSAUT (Attaquant)</ComboBoxItem>
+                                        <ComboBoxItem>UNITÉ DE PROTECTION (Défenseur)</ComboBoxItem>
+                                    </ComboBox>
                                 </StackPanel>
-                                <Separator Background="{StaticResource AttackerBrush}" Opacity="0.2" Height="1"/>
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="BRUTE:" FontSize="9" FontWeight="Bold" Foreground="{StaticResource AttackerBrush}" />
-                                    <TextBlock Text="{Binding BruteStats}" FontSize="10" Opacity="0.8" />
+
+                                <StackPanel Spacing="10" IsVisible="{Binding !IsSoloMode}">
+                                    <TextBlock Text="NOM DE LA SALLE DE GUERRE" FontSize="14" />
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="15">
+                                        <TextBox x:Name="RoomName" Watermark="Ex: Alpha-Sector-9..." IsEnabled="{Binding IsConnected}" />
+                                        <Button Grid.Column="1" Content="REJOINDRE / CRÉER" Command="{Binding JoinSpecificGameCommand}" 
+                                                CommandParameter="{Binding #RoomName.Text}" IsEnabled="{Binding IsConnected}" Classes="Flat" />
+                                    </Grid>
                                 </StackPanel>
                             </StackPanel>
-                        </Border>
-                    </StackPanel>
-            </Border>
-        </Grid>
 
-        <!-- MODALE DE FIN DE PARTIE -->
-        <Border Background="#CC000000" IsVisible="{Binding IsGameFinished}" ZIndex="500">
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="40">
-                <StackPanel Spacing="10" HorizontalAlignment="Center">
-                    <TextBlock Text="OPÉRATION TERMINÉE" FontSize="16" FontWeight="Bold" Opacity="0.5" LetterSpacing="4" HorizontalAlignment="Center" />
-                    <Rectangle Width="60" Height="2" Fill="{Binding GameResultColor}" HorizontalAlignment="Center" />
-                </StackPanel>
+                            <Separator Opacity="0.1" />
 
-                <TextBlock Text="{Binding GameResultMessage}" 
-                           FontSize="56" 
-                           FontWeight="Black" 
-                           Foreground="{Binding GameResultColor}" 
-                           HorizontalAlignment="Center" 
-                           TextAlignment="Center"
-                           MaxWidth="800"
-                           TextWrapping="Wrap">
-                    <TextBlock.Effect>
-                        <DropShadowEffect BlurRadius="20" Color="{Binding GameResultColor}" Opacity="0.4" />
-                    </TextBlock.Effect>
-                </TextBlock>
+                            <StackPanel Spacing="20" VerticalAlignment="Bottom">
+                                <Button IsVisible="{Binding IsSoloMode}" Command="{Binding StartSoloCommand}" 
+                                        HorizontalAlignment="Stretch" Height="100" Classes="Flat">
+                                    <Button.Background>
+                                        <LinearGradientBrush>
+                                            <GradientStop Offset="0" Color="{StaticResource AccentColor}" />
+                                            <GradientStop Offset="1" Color="#00A0FF" />
+                                        </LinearGradientBrush>
+                                    </Button.Background>
+                                    <StackPanel Orientation="Horizontal" Spacing="25">
+                                        <Path Data="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z" Fill="Black" Width="40" Height="40" Stretch="Uniform" />
+                                        <TextBlock Text="LANCER L'OPÉRATION" FontSize="28" FontWeight="Black" Foreground="Black" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
 
-                <Button Classes="game" 
-                        Command="{Binding ReplayCommand}" 
-                        Padding="40,20" 
-                        HorizontalAlignment="Center"
-                        FontSize="20"
-                        FontWeight="Bold">
-                    <StackPanel Orientation="Horizontal" Spacing="15">
-                        <Path Data="M12,5V1L7,6L12,11V7A8,8 0 0,1 20,15A8,8 0 0,1 12,23A8,8 0 0,1 4,15H2A10,10 0 0,0 12,25A10,10 0 0,0 22,15A10,10 0 0,0 12,5Z" 
-                              Fill="White" 
-                              Width="20" Height="20" 
-                              Stretch="Uniform" />
-                        <TextBlock Text="REJOUER / MATCHMAKING" />
-                    </StackPanel>
-                </Button>
+                                <Border IsVisible="{Binding !IsSoloMode}" Padding="20" Background="#10FFFFFF" CornerRadius="12">
+                                    <StackPanel Spacing="10">
+                                        <TextBlock Text="PRÊT POUR LE MULTIJOUEUR" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center" />
+                                        <TextBlock Text="Sélectionnez une mission à gauche pour vous connecter au champ de bataille." Opacity="0.6" TextAlignment="Center" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+
+                                <Border IsVisible="{Binding LastError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" 
+                                        Background="#40FF0000" Padding="15" CornerRadius="8" BorderBrush="#80FF0000" BorderThickness="1">
+                                    <TextBlock Text="{Binding LastError}" Foreground="White" FontWeight="Bold" TextWrapping="Wrap" HorizontalAlignment="Center" />
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </suki:GlassCard>
+                </Grid>
             </StackPanel>
         </Border>
-    </Grid>
 
-</Window>
+        <!-- WAITING ROOM -->
+        <Border Background="#F005080F" IsVisible="{Binding IsWaitingRoomVisible}" ZIndex="250">
+            <suki:GlassCard VerticalAlignment="Center" HorizontalAlignment="Center" Width="600" Padding="40">
+                <StackPanel Spacing="40">
+                    <TextBlock Text="PRÉPARATION DU DÉPLOIEMENT" FontSize="32" FontWeight="Black" HorizontalAlignment="Center" LetterSpacing="5" />
+                    
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="30">
+                        <suki:GlassCard Grid.Column="0">
+                            <StackPanel Spacing="20" HorizontalAlignment="Center">
+                                <TextBlock Text="PILOTE" FontWeight="Bold" Opacity="0.6" HorizontalAlignment="Center" />
+                                <Ellipse Width="50" Height="50" Fill="{Binding IsReady, Converter={StaticResource ReadyToColorConverter}}" />
+                                <CheckBox Content="PRÊT" IsChecked="{Binding IsReady}" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </suki:GlassCard>
+
+                        <suki:GlassCard Grid.Column="1">
+                            <StackPanel Spacing="20" HorizontalAlignment="Center">
+                                <TextBlock Text="ADVERSAIRE" FontWeight="Bold" Opacity="0.6" HorizontalAlignment="Center" />
+                                <Ellipse Width="50" Height="50" Fill="{Binding IsOpponentReady, Converter={StaticResource ReadyToColorConverter}}" />
+                                <TextBlock Text="IDENTIFICATION..." Opacity="0.5" FontSize="10" />
+                            </StackPanel>
+                        </suki:GlassCard>
+                    </Grid>
+
+                    <ProgressBar IsIndeterminate="True" />
+                    
+                    <Button Content="ABANDONNER LA MISSION" Command="{Binding ReplayCommand}" Classes="Basic" HorizontalAlignment="Center" />
+                </StackPanel>
+            </suki:GlassCard>
+        </Border>
+
+        <!-- GAME UI (Remains mostly native but with Suki touches if needed) -->
+        <Grid IsVisible="{Binding IsGameStarted}" RowDefinitions="Auto,*" ColumnDefinitions="Auto,*,Auto" Margin="30">
+            <!-- TOP HUD -->
+            <suki:GlassCard Grid.Row="0" Grid.ColumnSpan="3" Margin="0,0,0,20" Padding="20,10">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Orientation="Horizontal" Spacing="40">
+                        <StackPanel>
+                            <TextBlock Text="TOWER FLUFFY" FontWeight="Black" FontSize="18" Foreground="{StaticResource AccentBrush}" />
+                            <TextBlock Text="LIVE TACTICAL FEED" FontSize="10" Opacity="0.5" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Spacing="20">
+                            <Border Background="#20FF2E2E" Padding="15,5" CornerRadius="8">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <TextBlock Text="COEUR:" FontSize="10" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding Snapshot.Hud.BaseHealth}" FontSize="24" FontWeight="Bold" Foreground="#FF2E2E" />
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#2000F2FF" Padding="15,5" CornerRadius="8">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <TextBlock Text="VAGUE:" FontSize="10" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding Snapshot.Hud.WaveNumber}" FontSize="24" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="QUITTER" Command="{Binding ReplayCommand}" Classes="Basic" />
+                </Grid>
+            </suki:GlassCard>
+
+            <!-- GAME BOARD (Middle) -->
+            <suki:GlassCard Grid.Row="1" Grid.Column="1" Padding="0" ClipToBounds="True">
+                <Viewbox Stretch="Uniform">
+                    <controls:GameBoardControl Snapshot="{Binding Snapshot}" PlaceTowerCommand="{Binding PlaceTowerCommand}" Margin="50" />
+                </Viewbox>
+            </suki:GlassCard>
+            
+            <!-- (Side panels can be restored here as needed) -->
+        </Grid>
+    </Grid>
+</suki:SukiWindow>

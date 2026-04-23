@@ -1,15 +1,15 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sukiUi="using:SukiUI"
              x:Class="TowerFluffy.UI.Desktop.App"
              xmlns:local="using:TowerFluffy.UI.Desktop"
              RequestedThemeVariant="Dark">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
     <Application.DataTemplates>
         <local:ViewLocator/>
     </Application.DataTemplates>
   
     <Application.Styles>
-        <FluentTheme />
+        <sukiUi:SukiTheme ThemeColor="Blue" />
     </Application.Styles>
 </Application>

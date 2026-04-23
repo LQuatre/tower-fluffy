@@ -4,9 +4,11 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 
+using SukiUI.Controls;
+
 namespace TowerFluffy.UI.Desktop.Views;
 
-public partial class MainWindow : Window
+public partial class MainWindow : SukiWindow
 {
     private readonly DispatcherTimer _timer;
 

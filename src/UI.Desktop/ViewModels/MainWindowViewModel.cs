@@ -140,9 +140,9 @@ public sealed class MainWindowViewModel : ViewModelBase
         private set => this.RaiseAndSetIfChanged(ref _isOpponentReady, value);
     }
 
-    public bool IsLobbyVisible => IsConnected && !IsInGameRoom && !IsGameStarted;
+    public bool IsLobbyVisible => false; // Désormais fusionné dans IsConnectionVisible
     public bool IsWaitingRoomVisible => IsConnected && IsInGameRoom && !IsGameStarted;
-    public bool IsConnectionVisible => !IsConnected && !IsGameStarted;
+    public bool IsConnectionVisible => !IsInGameRoom && !IsGameStarted;
     public bool IsSoloMode => SelectedRole == PlayerRole.Both;
 
     public GameSnapshotDto Snapshot
