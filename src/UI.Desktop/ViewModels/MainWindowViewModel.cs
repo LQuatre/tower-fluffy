@@ -25,7 +25,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private bool _isGameStarted;
     private bool _isOpponentReady;
     private bool _isInGameRoom;
-    private string _serverUrl = "http://localhost:5128/gameHub";
+    private string _serverUrl = "http://vps.lquatre.fr:5128/gameHub";
     private System.Collections.ObjectModel.ObservableCollection<GameInfoDto> _availableGames = new();
     private PlayerRole _selectedRole = PlayerRole.Both;
     private GridPositionDto? _movingTowerFrom;
