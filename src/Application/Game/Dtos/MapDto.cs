@@ -7,5 +7,4 @@ public sealed record MapDto(
     int Height,
     int CellSize,
     IReadOnlyList<GridPositionDto> BlockedCells,
-    WorldPositionDto PathStart,
-    WorldPositionDto PathEnd);
+    IReadOnlyList<WorldPositionDto> Waypoints);

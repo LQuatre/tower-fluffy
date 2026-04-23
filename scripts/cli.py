@@ -8,6 +8,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SOLUTION = REPO_ROOT / "TowerFluffy.slnx"
 UI_PROJECT = REPO_ROOT / "src" / "UI.Desktop" / "TowerFluffy.UI.Desktop.csproj"
+SERVER_PROJECT = REPO_ROOT / "src" / "Server" / "TowerFluffy.Server.csproj"
 
 
 def run(command: list[str]) -> None:
@@ -31,6 +32,10 @@ def cmd_run_ui(configuration: str) -> None:
     run(["dotnet", "run", "--project", str(UI_PROJECT), "-c", configuration])
 
 
+def cmd_run_server(configuration: str) -> None:
+    run(["dotnet", "run", "--project", str(SERVER_PROJECT), "-c", configuration])
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
@@ -45,6 +50,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     run_ui = sub.add_parser("run-ui")
     run_ui.add_argument("--configuration", default="Debug")
+
+    run_server = sub.add_parser("run-server")
+    run_server.add_argument("--configuration", default="Debug")
 
     return parser
 
@@ -66,6 +74,10 @@ def main(argv: list[str]) -> int:
 
     if args.command == "run-ui":
         cmd_run_ui(args.configuration)
+        return 0
+
+    if args.command == "run-server":
+        cmd_run_server(args.configuration)
         return 0
 
     raise NotImplementedError(args.command)

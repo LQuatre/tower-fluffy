@@ -9,6 +9,7 @@ public sealed record MatchState(
     Map Map,
     GameState Simulation,
     int WaveNumber,
+    int CurrentLevel,
     MatchPhase Phase,
     MatchOutcome Outcome,
     Gold DefenderGold,
@@ -42,6 +43,7 @@ public sealed record MatchState(
             Map: map,
             Simulation: simulation,
             WaveNumber: 0,
+            CurrentLevel: 1,
             Phase: MatchPhase.Preparation,
             Outcome: MatchOutcome.None,
             DefenderGold: config.StartingGold,
@@ -79,17 +81,17 @@ public sealed record MatchState(
     {
         if (Outcome != MatchOutcome.None)
         {
-            return DomainResult<MatchState>.Failure("match.finished", "Match is finished.");
+            return DomainResult<MatchState>.Failure("match.finished", "Le match est terminé.");
         }
 
         if (Phase != MatchPhase.Preparation)
         {
-            return DomainResult<MatchState>.Failure("match.phase", "Cannot start wave outside preparation.");
+            return DomainResult<MatchState>.Failure("match.phase", "Impossible de démarrer la vague en dehors de la préparation.");
         }
 
         if (WaveNumber >= Config.TotalWaves)
         {
-            return DomainResult<MatchState>.Failure("match.waves", "No more waves remaining.");
+            return DomainResult<MatchState>.Failure("match.waves", "Plus de vagues restantes.");
         }
 
         var nextWave = WaveNumber + 1;
@@ -113,32 +115,33 @@ public sealed record MatchState(
     {
         if (Outcome != MatchOutcome.None)
         {
-            return DomainResult<MatchState>.Failure("match.finished", "Match is finished.");
+            return DomainResult<MatchState>.Failure("match.finished", "Le match est terminé.");
         }
 
         if (Phase != MatchPhase.Preparation)
         {
-            return DomainResult<MatchState>.Failure("tower.phase", "Towers can only be placed during preparation.");
+            return DomainResult<MatchState>.Failure("tower.phase", "Les tours ne peuvent être placées que pendant la préparation.");
         }
 
         if (!Map.IsBuildable(position))
         {
-            return DomainResult<MatchState>.Failure("tower.placement", "Cannot place a tower on this cell.");
+            return DomainResult<MatchState>.Failure("tower.placement", "Impossible de placer une tour sur cette cellule.");
         }
 
         if (Simulation.Towers.Any(t => t.Position == position))
         {
-            return DomainResult<MatchState>.Failure("tower.occupied", "A tower already exists on this cell.");
+            return DomainResult<MatchState>.Failure("tower.occupied", "Une tour existe déjà sur cette cellule.");
         }
 
         var definition = Config.GetTower(type);
         if (!DefenderGold.CanAfford(definition.Stats.Cost))
         {
-            return DomainResult<MatchState>.Failure("tower.gold", "Not enough gold.");
+            return DomainResult<MatchState>.Failure("tower.gold", "Pas assez d'or.");
         }
 
         var tower = new Tower(
             Id: NextEntityId,
+            Type: type,
             Position: position,
             Stats: definition.Stats,
             Health: definition.Health,
@@ -155,27 +158,63 @@ public sealed record MatchState(
         return DomainResult<MatchState>.Success(updated);
     }
 
+    public DomainResult<MatchState> MoveTower(GridPosition oldPosition, GridPosition newPosition)
+    {
+        if (Outcome != MatchOutcome.None)
+        {
+            return DomainResult<MatchState>.Failure("match.finished", "Le match est terminé.");
+        }
+
+        if (Phase != MatchPhase.Preparation)
+        {
+            return DomainResult<MatchState>.Failure("tower.phase", "Les tours ne peuvent être déplacées que pendant la préparation.");
+        }
+
+        if (Simulation.Towers.All(t => t.Position != oldPosition))
+        {
+            return DomainResult<MatchState>.Failure("tower.notfound", "Aucune tour à cet emplacement.");
+        }
+
+        if (!Map.IsBuildable(newPosition))
+        {
+            return DomainResult<MatchState>.Failure("tower.placement", "Impossible de placer une tour sur cette cellule.");
+        }
+
+        if (Simulation.Towers.Any(t => t.Position == newPosition))
+        {
+            return DomainResult<MatchState>.Failure("tower.occupied", "Une tour existe déjà sur cette cellule.");
+        }
+
+        var updated = this with
+        {
+            Simulation = Simulation.WithMovedTower(oldPosition, newPosition),
+            LastCombatEvents = Array.Empty<CombatEvent>(),
+        };
+
+        return DomainResult<MatchState>.Success(updated);
+    }
+
     public DomainResult<MatchState> SendUnit(UnitType type)
     {
         if (Outcome != MatchOutcome.None)
         {
-            return DomainResult<MatchState>.Failure("match.finished", "Match is finished.");
+            return DomainResult<MatchState>.Failure("match.finished", "Le match est terminé.");
         }
 
         if (Phase != MatchPhase.Wave)
         {
-            return DomainResult<MatchState>.Failure("unit.phase", "Units can only be sent during a wave.");
+            return DomainResult<MatchState>.Failure("unit.phase", "Les unités ne peuvent être envoyées que pendant une vague.");
         }
 
         if (WaveSendTicksRemaining <= 0)
         {
-            return DomainResult<MatchState>.Failure("unit.window", "Wave send window is closed.");
+            return DomainResult<MatchState>.Failure("unit.window", "La fenêtre d'envoi de la vague est fermée.");
         }
 
         var definition = Config.GetUnit(type);
         if (!AttackerBudget.CanAfford(definition.Cost))
         {
-            return DomainResult<MatchState>.Failure("unit.budget", "Not enough budget.");
+            return DomainResult<MatchState>.Failure("unit.budget", "Pas assez de budget.");
         }
 
         var unit = new Unit(
@@ -246,6 +285,17 @@ public sealed record MatchState(
 
         if (WaveNumber >= Config.TotalWaves)
         {
+            if (CurrentLevel < 3)
+            {
+                var nextLevel = CurrentLevel + 1;
+                var nextMap = DefaultMapFactory.Create(nextLevel);
+                var nextState = CreateNew(Config, nextMap) with 
+                { 
+                    CurrentLevel = nextLevel,
+                    DefenderGold = DefenderGold.Add(new Gold(100)) // Bonus de passage de niveau
+                };
+                return nextState;
+            }
             return stateAfterTick with { Phase = MatchPhase.Finished, Outcome = MatchOutcome.DefenderVictory };
         }
 

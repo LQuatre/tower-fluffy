@@ -70,6 +70,15 @@ public sealed class GameSession
         return Apply(result);
     }
 
+    public CommandResult MoveTower(GridPositionDto oldPos, GridPositionDto newPos)
+    {
+        var domainOld = new GridPosition(oldPos.X, oldPos.Y);
+        var domainNew = new GridPosition(newPos.X, newPos.Y);
+
+        var result = _state.MoveTower(domainOld, domainNew);
+        return Apply(result);
+    }
+
     public CommandResult SendUnit(UnitTypeDto type)
     {
         var domainType = (UnitType)type;

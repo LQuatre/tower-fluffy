@@ -66,6 +66,17 @@ public sealed class GameState
         return new GameState(Tick, BaseHealth, _units, _towers.Concat(new[] { tower }));
     }
 
+    public GameState WithMovedTower(GridPosition oldPosition, GridPosition newPosition)
+    {
+        var towerIndex = Array.FindIndex(_towers, t => t.Position == oldPosition);
+        if (towerIndex < 0) return this;
+
+        var updatedTowers = _towers.ToArray();
+        updatedTowers[towerIndex] = updatedTowers[towerIndex] with { Position = newPosition };
+        
+        return new GameState(Tick, BaseHealth, _units, updatedTowers);
+    }
+
     private static UnitPhaseResult ApplyUnitPhase(Tick tick, Map map, Unit[] units, Tower[] towers)
     {
         if (units.Length == 0)

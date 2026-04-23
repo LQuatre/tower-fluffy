@@ -12,7 +12,8 @@ Tower Defense asymétrique (Attaquant vs Défenseur) en C# / Avalonia.
 - Restore : `python scripts/cli.py restore`
 - Build   : `python scripts/cli.py build`
 - Tests   : `python scripts/cli.py test`
-- Run UI  : `python scripts/cli.py run-ui`
+- Run UI     : `python scripts/cli.py run-ui`
+- Run Server : `python scripts/cli.py run-server`
 
 ## Architecture
 
