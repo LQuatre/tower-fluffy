@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import * as signalR from '@microsoft/signalr'
 import { MessagePackHubProtocol } from '@microsoft/signalr-protocol-msgpack'
 import { 
@@ -17,6 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import PresentationPage from './pages/PresentationPage'
 
 // Types from server
 interface GameInfoDto {
@@ -31,7 +33,7 @@ const getHubUrl = () => {
   return `${protocol}//${hostname}:5128/gameHub`;
 };
 
-export default function App() {
+function Lobby() {
   const [connection, setConnection] = useState<signalR.HubConnection | null>(null);
   const [games, setGames] = useState<GameInfoDto[]>([]);
   const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
@@ -55,7 +57,7 @@ export default function App() {
       setGames(gameList);
     });
 
-    newConnection.on("ReceiveGameStarted", (seed: number, startTime: number) => {
+    newConnection.on("ReceiveGameStarted", (seed: number) => {
       console.log("Game started with seed:", seed);
       setGameStarted(true);
     });
@@ -261,5 +263,16 @@ export default function App() {
         TowerFluffy Game Server Management Console
       </footer>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Lobby />} />
+        <Route path="/presentation" element={<PresentationPage />} />
+      </Routes>
+    </Router>
   );
 }
