@@ -1,7 +1,9 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+#if WINDOWS
 using System.Windows.Media;
+#endif
 using System.Collections.Generic;
 
 namespace TowerFluffy.UI.Desktop;
@@ -12,6 +14,7 @@ public static class SoundEffects
     private static DateTime _lastFlame = DateTime.MinValue;
     private static readonly object _lock = new();
     
+#if WINDOWS
     private static readonly List<MediaPlayer> _laserPool = new();
     private static int _nextLaserIndex = 0;
 
@@ -21,6 +24,7 @@ public static class SoundEffects
     private const int PoolSize = 10;
 
     private static MediaPlayer? _themePlayer;
+#endif
 
     public static void Initialize()
     {
@@ -37,6 +41,7 @@ public static class SoundEffects
                     return;
                 }
 
+#if WINDOWS
                 // 1. Initialisation du thème musical
                 string themePath = Path.Combine(soundsDir, "theme_futur.mp3");
                 if (File.Exists(themePath))
@@ -59,11 +64,13 @@ public static class SoundEffects
                     
                     Console.WriteLine($"[Audio] Fichier thème détecté : {themePath}");
                 }
+#endif
                 else
                 {
                     Console.WriteLine($"[Audio] ATTENTION : Thème non trouvé à {themePath}");
                 }
 
+#if WINDOWS
                 // 2. Initialisation du pool de bruitages (Laser)
                 string laserPath = Path.Combine(soundsDir, "tir_laser.wav");
                 if (File.Exists(laserPath))
@@ -93,6 +100,7 @@ public static class SoundEffects
                     }
                     Console.WriteLine($"[Audio] Pool Flamme prêt ({PoolSize} lecteurs).");
                 }
+#endif
             }
             catch (Exception ex)
             {
@@ -103,12 +111,14 @@ public static class SoundEffects
 
     public static void StopTheme()
     {
+#if WINDOWS
         if (_themePlayer != null)
         {
             _themePlayer.Dispatcher.BeginInvoke(() => {
                 _themePlayer.Stop();
             });
         }
+#endif
     }
 
     private static string? GetSoundsDirectory()
@@ -128,6 +138,7 @@ public static class SoundEffects
 
     public static void PlayPiou()
     {
+#if WINDOWS
         if (_laserPool.Count == 0) return;
 
         lock (_lock)
@@ -144,10 +155,12 @@ public static class SoundEffects
                 player.Play();
             });
         }
+#endif
     }
 
     public static void PlayFlamme()
     {
+#if WINDOWS
         if (_flamePool.Count == 0) return;
 
         lock (_lock)
@@ -164,5 +177,6 @@ public static class SoundEffects
                 player.Play();
             });
         }
+#endif
     }
 }
