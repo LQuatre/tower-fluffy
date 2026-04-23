@@ -13,7 +13,7 @@ namespace TowerFluffy.UI.Desktop.ViewModels;
 
 public sealed class MainWindowViewModel : ViewModelBase
 {
-    private readonly GameSession _session;
+    private GameSession _session;
     private GameSnapshotDto _snapshot;
     private string? _lastError;
     private SignalRGameClient? _networkClient;
@@ -329,7 +329,10 @@ public sealed class MainWindowViewModel : ViewModelBase
 
             _networkClient = new SignalRGameClient(ServerUrl.Trim());
             _networkClient.OnPlayerActionReceived += HandleNetworkAction;
-            _networkClient.OnGameStarted += () => Avalonia.Threading.Dispatcher.UIThread.Post(() => IsGameStarted = true);
+            _networkClient.OnGameStarted += (seed) => Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                _session = GameSession.CreateMvp(seed);
+                IsGameStarted = true;
+            });
             _networkClient.OnOpponentReady += (ready) => Avalonia.Threading.Dispatcher.UIThread.Post(() => IsOpponentReady = ready);
             
             await _networkClient.StartAsync();

@@ -31,7 +31,7 @@ public class SignalRGameClient : IGameHub
         _connection.On<CombatEvent>("ReceiveCombatEvent", (e) => OnCombatEventReceived?.Invoke(e));
         _connection.On<string, string>("ReceiveChat", (sender, message) => OnChatReceived?.Invoke(sender, message));
         _connection.On<PlayerAction>("ReceivePlayerAction", (action) => OnPlayerActionReceived?.Invoke(action));
-        _connection.On("ReceiveGameStarted", () => OnGameStarted?.Invoke());
+        _connection.On<int>("ReceiveGameStarted", (seed) => OnGameStarted?.Invoke(seed));
         _connection.On<bool>("ReceiveOpponentReady", (isReady) => OnOpponentReady?.Invoke(isReady));
     }
 
@@ -39,7 +39,7 @@ public class SignalRGameClient : IGameHub
     public event Action<CombatEvent>? OnCombatEventReceived;
     public event Action<string, string>? OnChatReceived;
     public event Action<PlayerAction>? OnPlayerActionReceived;
-    public event Action? OnGameStarted;
+    public event Action<int>? OnGameStarted;
     public event Action<bool>? OnOpponentReady;
 
     public async Task StartAsync()

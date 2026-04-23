@@ -5,12 +5,15 @@ namespace TowerFluffy.Domain.Match;
 
 public static class DefaultMapFactory
 {
-    public static Map Create(int level = 1)
+    public static Map Create(int level = 1, int? seed = null)
     {
         const int width = 16;
         const int height = 10;
         const int cellSize = 40;
-        var rand = new System.Random();
+        
+        // Si un seed est fourni, on l'utilise pour la reproductibilité (multiplayer)
+        // Sinon on utilise l'aléatoire par défaut (solo)
+        var rand = seed.HasValue ? new System.Random(seed.Value) : new System.Random();
 
         var grid = new Grid(Width: width, Height: height, CellSize: cellSize);
         var pathCells = new List<GridPosition>();

@@ -10,6 +10,7 @@ public sealed record MatchState(
     GameState Simulation,
     int WaveNumber,
     int CurrentLevel,
+    int Seed,
     MatchPhase Phase,
     MatchOutcome Outcome,
     Gold DefenderGold,
@@ -20,7 +21,7 @@ public sealed record MatchState(
     int NextEntityId,
     IReadOnlyList<CombatEvent> LastCombatEvents)
 {
-    public static MatchState CreateNew(GameConfig config, Map map)
+    public static MatchState CreateNew(GameConfig config, Map map, int seed = 0)
     {
         if (config is null)
         {
@@ -44,6 +45,7 @@ public sealed record MatchState(
             Simulation: simulation,
             WaveNumber: 0,
             CurrentLevel: 1,
+            Seed: seed,
             Phase: MatchPhase.Preparation,
             Outcome: MatchOutcome.None,
             DefenderGold: config.StartingGold,
@@ -291,8 +293,8 @@ public sealed record MatchState(
             if (CurrentLevel < 3)
             {
                 var nextLevel = CurrentLevel + 1;
-                var nextMap = DefaultMapFactory.Create(nextLevel);
-                var nextState = CreateNew(Config, nextMap) with 
+                var nextMap = DefaultMapFactory.Create(nextLevel, Seed + nextLevel);
+                var nextState = CreateNew(Config, nextMap, Seed) with 
                 { 
                     CurrentLevel = nextLevel,
                     DefenderGold = DefenderGold.Add(new Gold(100)) // Bonus de passage de niveau
