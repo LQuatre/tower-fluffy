@@ -12,6 +12,13 @@ public class GameHub : Hub<IGameClient>, IGameHub
 
     public async Task JoinGame(string gameId)
     {
+        if (string.IsNullOrEmpty(gameId))
+        {
+            Console.WriteLine("JoinGame called with null or empty gameId");
+            return;
+        }
+
+        Console.WriteLine($"Player {Context.ConnectionId} joining game {gameId}");
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
         
         lock (_games)
