@@ -198,12 +198,13 @@ public sealed class MainWindowViewModel : ViewModelBase
     public string PreparationTimeFormatted => $"{Snapshot.Hud.PreparationTicksRemaining / 60.0:F1} sec";
     public string WaveSendTimeFormatted => $"{Snapshot.Hud.WaveSendTicksRemaining / 60.0:F1} sec";
     public bool IsPreparationTimerVisible => Snapshot.Hud.PreparationTicksRemaining > 0;
+    public bool IsSkipButtonVisible => IsPreparationTimerVisible && CanSkipPreparation;
 
     // COÛTS TACTIQUES (Synchronisés avec GameConfig)
     public int BasicTowerCost => 50;
     public int FlamethrowerCost => 200;
     public int SoldatCost => 12;
-    public int BruteCost => 50;
+    public int BruteCost => 60;
 
     public string PhaseFormatted => Snapshot.Hud.Phase switch
     {
@@ -234,13 +235,13 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public string CurrentTowerStats => CurrentTowerType switch
     {
-        TowerTypeDto.BasicShooter => "Dégâts: 2 | Portée: 220 | Cadence: 0.3s | PV: 40",
-        TowerTypeDto.Flamethrower => "Dégâts: 1 | Portée: 160 | Cadence: 0.2s | PV: 50",
+        TowerTypeDto.BasicShooter => "Dégâts: 3 | Portée: 220 | Cadence: 0.3s | PV: 40",
+        TowerTypeDto.Flamethrower => "Dégâts: 2 | Portée: 180 | Cadence: 0.2s | PV: 50",
         _ => ""
     };
 
-    public string SoldatStats => "PV: 5 | Vitesse: 3 | Dégâts: 2 | Portée: 150";
-    public string BruteStats => "PV: 40 | Vitesse: 1 | Dégâts: 10 | Portée: 180";
+    public string SoldatStats => "PV: 4 | Vitesse: 3 | Dégâts: 2 | Portée: 150";
+    public string BruteStats => "PV: 30 | Vitesse: 1 | Dégâts: 10 | Portée: 180";
 
     public ReactiveCommand<Unit, Unit> SkipPreparationCommand { get; }
     public ReactiveCommand<Unit, Unit> SendSoldatCommand { get; }

@@ -27,7 +27,7 @@ public sealed record GameConfig(
             BaseWaveBudget: new Budget(80),
             WaveBudgetIncrement: new Budget(20),
             BudgetBonusPerTowerDestroyed: new Budget(10),
-            StartingGold: new Gold(300),
+            StartingGold: new Gold(500),
             StartingBaseHealth: new Health(100),
             GoldPerBaseDamageTaken: 10,
             Towers: new[]
@@ -36,7 +36,7 @@ public sealed record GameConfig(
                     TowerType.BasicShooter,
                     new TowerStats(
                         Cost: new Gold(50),
-                        DamagePerShot: new Damage(2),
+                        DamagePerShot: new Damage(3),
                         Range: 220,
                         CooldownTicksBetweenShots: 20),
                     Health: new Health(40)),
@@ -44,8 +44,8 @@ public sealed record GameConfig(
                     TowerType.Flamethrower,
                     new TowerStats(
                         Cost: new Gold(200),
-                        DamagePerShot: new Damage(1),
-                        Range: 160,
+                        DamagePerShot: new Damage(2),
+                        Range: 180,
                         CooldownTicksBetweenShots: 12),
                     Health: new Health(50)),
             },
@@ -54,7 +54,7 @@ public sealed record GameConfig(
                 new UnitDefinition(
                     UnitType.Soldat,
                     Cost: new Budget(12),
-                    Health: new Health(5),
+                    Health: new Health(4),
                     SpeedPerTick: 3,
                     DamageToBase: new Damage(1),
                     DamageToTower: new Damage(2),
@@ -63,8 +63,8 @@ public sealed record GameConfig(
                     LootGold: new Gold(10)),
                 new UnitDefinition(
                     UnitType.Brute,
-                    Cost: new Budget(50),
-                    Health: new Health(40),
+                    Cost: new Budget(60),
+                    Health: new Health(30),
                     SpeedPerTick: 1,
                     DamageToBase: new Damage(5),
                     DamageToTower: new Damage(10),

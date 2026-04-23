@@ -200,7 +200,8 @@
                         </Viewbox>
                     </StackPanel>
 
-                    <Button Grid.Column="2" Command="{Binding SkipPreparationCommand}" IsVisible="{Binding IsPreparationTimerVisible}" 
+                    <Button Grid.Column="2" Command="{Binding SkipPreparationCommand}" 
+                            IsVisible="{Binding IsSkipButtonVisible}" 
                             Content="VAGUE SUIVANTE" Classes="Flat" Height="45" Padding="25,0" HorizontalAlignment="Right" />
                 </Grid>
             </Border>
