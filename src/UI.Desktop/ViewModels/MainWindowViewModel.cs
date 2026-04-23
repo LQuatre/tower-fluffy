@@ -374,6 +374,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                 _session = GameSession.CreateMvp(seed);
                 _gameStartTime = new DateTime(startTime, DateTimeKind.Utc);
                 _totalTicksProcessed = 0;
+                Snapshot = _session.Snapshot;
                 IsGameStarted = true;
             });
             _networkClient.OnOpponentReady += (ready) => Avalonia.Threading.Dispatcher.UIThread.Post(() => IsOpponentReady = ready);
@@ -419,6 +420,8 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private void ExecuteStartSolo()
     {
+        _session = GameSession.CreateMvp();
+        Snapshot = _session.Snapshot;
         IsGameStarted = true;
     }
 
@@ -428,6 +431,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         IsInGameRoom = false;
         IsReady = false;
         IsOpponentReady = false;
+        _gameStartTime = null;
+        _totalTicksProcessed = 0;
     }
 
     private void HandleNetworkAction(PlayerAction action)
