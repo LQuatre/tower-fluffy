@@ -17,6 +17,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     private GameSnapshotDto _snapshot;
     private string? _lastError;
     private SignalRGameClient? _networkClient;
+    private DateTime? _gameStartTime;
+    private long _totalTicksProcessed;
     private bool _isConnected;
     private bool _isConnecting;
     private bool _isReady;
@@ -222,12 +224,25 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public void Tick()
     {
-        if (!IsGameStarted)
+        if (!IsGameStarted || _gameStartTime == null)
         {
             return;
         }
 
-        _session.Tick(1);
+        var now = DateTime.UtcNow;
+        var elapsed = now - _gameStartTime.Value;
+        
+        // On vise 60 ticks par seconde
+        long targetTicks = (long)(elapsed.TotalSeconds * 60);
+        int ticksToProcess = (int)(targetTicks - _totalTicksProcessed);
+
+        if (ticksToProcess <= 0) return;
+
+        // On limite le rattrapage pour éviter de freezer si le décalage est énorme
+        ticksToProcess = Math.Min(ticksToProcess, 10);
+        
+        _session.Tick(ticksToProcess);
+        _totalTicksProcessed += ticksToProcess;
         Snapshot = _session.Snapshot;
 
         // Effets sonores
@@ -329,8 +344,10 @@ public sealed class MainWindowViewModel : ViewModelBase
 
             _networkClient = new SignalRGameClient(ServerUrl.Trim());
             _networkClient.OnPlayerActionReceived += HandleNetworkAction;
-            _networkClient.OnGameStarted += (seed) => Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+            _networkClient.OnGameStarted += (seed, startTime) => Avalonia.Threading.Dispatcher.UIThread.Post(() => {
                 _session = GameSession.CreateMvp(seed);
+                _gameStartTime = new DateTime(startTime, DateTimeKind.Utc);
+                _totalTicksProcessed = 0;
                 IsGameStarted = true;
             });
             _networkClient.OnOpponentReady += (ready) => Avalonia.Threading.Dispatcher.UIThread.Post(() => IsOpponentReady = ready);
@@ -405,7 +422,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         if (_networkClient != null && IsConnected)
         {
-            _ = _networkClient.SendPlayerAction(new PlayerAction(1, kind, towerType, x, y, unitType, oldX, oldY));
+            var action = new PlayerAction(1, kind, towerType, x, y, unitType, oldX, oldY, _totalTicksProcessed);
+            _ = _networkClient.SendPlayerAction(action);
         }
     }
 
