@@ -14,14 +14,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const Comp = asChild ? Slot : "button"
     
     const variants = {
-      default: "bg-primary text-background hover:bg-primary/90 shadow-sm",
+      default: "bg-primary text-white hover:bg-primary/90 shadow-sm",
       destructive: "bg-red-500 text-white hover:bg-red-600 shadow-sm",
-      outline: "border border-white/20 bg-transparent hover:bg-white/5",
+      outline: "border border-border bg-transparent hover:bg-muted/50",
       secondary: "bg-muted text-foreground hover:bg-muted/80",
-      ghost: "hover:bg-white/5",
+      ghost: "hover:bg-muted/50",
       link: "text-primary underline-offset-4 hover:underline",
-      neon: "border border-primary text-primary hover:bg-primary hover:text-background neon-glow-primary",
-      'neon-pink': "border border-secondary text-secondary hover:bg-secondary hover:text-background neon-glow-secondary",
     }
 
     const sizes = {
