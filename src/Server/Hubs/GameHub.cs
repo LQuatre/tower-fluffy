@@ -23,6 +23,7 @@ public class GameHub : Hub<IGameClient>, IGameHub
 
         // Check if we have at least 2 ready players
         var readyCount = _readyPlayers.Values.Count(v => v);
+        
         if (readyCount >= 2)
         {
             var seed = new Random().Next();
