@@ -1,3 +1,5 @@
+using TowerFluffy.Domain.Match;
+
 namespace TowerFluffy.Domain.Simulation;
 
 public enum CombatEventKind
@@ -11,6 +13,7 @@ public readonly record struct CombatEvent(
     Tick Tick,
     CombatEventKind Kind,
     int SourceId,
+    TowerType? SourceTowerType,
     int? TargetId,
     WorldPosition From,
     WorldPosition To,

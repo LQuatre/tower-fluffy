@@ -261,6 +261,9 @@ public sealed record MatchState(
 
         var tick = Simulation.AdvanceOneTick(Map);
         var goldEarned = tick.UnitsKilled.Aggregate(Gold.Zero, static (sum, u) => sum.Add(u.LootGold));
+        var compensationGold = tick.CombatEvents
+            .Where(e => e.Kind == CombatEventKind.UnitHitBase)
+            .Aggregate(Gold.Zero, (sum, e) => sum.Add(new Gold(e.Damage.Value * Config.GoldPerBaseDamageTaken)));
         var budgetEarned = new Budget(tick.TowersDestroyed.Count * Config.BudgetBonusPerTowerDestroyed.Value);
         var attackerBudgetAfterTick = AttackerBudget.Add(budgetEarned);
 
@@ -268,7 +271,7 @@ public sealed record MatchState(
         {
             WaveSendTicksRemaining = sendRemaining,
             Simulation = tick.State,
-            DefenderGold = DefenderGold.Add(goldEarned),
+            DefenderGold = DefenderGold.Add(goldEarned).Add(compensationGold),
             AttackerBudget = attackerBudgetAfterTick,
             LastCombatEvents = tick.CombatEvents,
         };

@@ -11,6 +11,8 @@ public partial class App : Avalonia.Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        // Initialisation du son au plus tôt
+        SoundEffects.Initialize();
     }
 
     public override void OnFrameworkInitializationCompleted()

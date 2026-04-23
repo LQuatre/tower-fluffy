@@ -47,7 +47,7 @@ public sealed class GameSessionTests
 
         Assert.True(session.PlaceTower(TowerTypeDto.BasicShooter, new GridPositionDto(0, 4)).IsSuccess);
         Assert.True(session.SkipPreparation().IsSuccess);
-        Assert.True(session.SendUnit(UnitTypeDto.Grunt).IsSuccess);
+        Assert.True(session.SendUnit(UnitTypeDto.Soldat).IsSuccess);
 
         session.Tick(1);
 
@@ -74,6 +74,7 @@ public sealed class GameSessionTests
             BudgetBonusPerTowerDestroyed: new Budget(0),
             StartingGold: new Gold(100),
             StartingBaseHealth: new Health(10),
+            GoldPerBaseDamageTaken: 0,
             Towers: new[]
             {
                 new TowerDefinition(
@@ -88,7 +89,7 @@ public sealed class GameSessionTests
             Units: new[]
             {
                 new UnitDefinition(
-                    UnitType.Grunt,
+                    UnitType.Soldat,
                     Cost: new Budget(10),
                     Health: new Health(1),
                     SpeedPerTick: 0,

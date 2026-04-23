@@ -245,21 +245,25 @@ public sealed class GameBoardControl : Control
 
         foreach (var tower in snapshot.Towers)
         {
+            var towerBrush = tower.Type == TowerTypeDto.Flamethrower ? new SolidColorBrush(Color.Parse("#FF4500")) : brush;
+            var towerGlowBrush = new SolidColorBrush(towerBrush.Color, opacity: 0.2);
+            var towerStrongPen = new Pen(towerBrush, thickness: 2);
+
             var cellRect = new Rect(tower.Cell.X * cellSize, tower.Cell.Y * cellSize, cellSize, cellSize);
             var inset = cellSize * 0.2;
             var outer = cellRect.Deflate(inset);
 
             // Glow
-            context.DrawEllipse(glowBrush, null, outer.Center, outer.Width * 0.8, outer.Height * 0.8);
+            context.DrawEllipse(towerGlowBrush, null, outer.Center, outer.Width * 0.8, outer.Height * 0.8);
 
             var geometry = CreateCutCornerRectGeometry(outer, cut: cellSize * 0.15);
-            context.DrawGeometry(new SolidColorBrush(brush.Color, 0.1), strongPen, geometry);
+            context.DrawGeometry(new SolidColorBrush(towerBrush.Color, 0.1), towerStrongPen, geometry);
 
             // Core
             var coreRadius = cellSize * 0.1;
-            context.DrawEllipse(brush, null, outer.Center, coreRadius, coreRadius);
+            context.DrawEllipse(towerBrush, null, outer.Center, coreRadius, coreRadius);
 
-            DrawHealthPips(context, tower.Health, anchor: new Point(outer.Left, outer.Top - 6), maxPips: 5, stroke: brush);
+            DrawHealthPips(context, tower.Health, anchor: new Point(outer.Left, outer.Top - 6), maxPips: 5, stroke: towerBrush);
         }
     }
 
@@ -422,12 +426,10 @@ public sealed class GameBoardControl : Control
             var from = new Point(e.From.X, e.From.Y);
             var to = new Point(e.To.X, e.To.Y);
             var isKill = e.TargetDestroyed;
-
-            var sourceTower = snapshot.Towers.FirstOrDefault(t => t.Id == e.SourceId);
-            var sourceType = sourceTower?.Type;
+            var sourceType = e.SourceTowerType;
             var ttl = sourceType == TowerTypeDto.Flamethrower ? 8 : LineTtlTicks;
-
-            _lineEffects.Add(new LineEffect(e.Tick, from, to, isKill, sourceType, ttl));
+            var isAttacker = e.Kind == CombatEventKindDto.UnitAttackTower || e.Kind == CombatEventKindDto.UnitHitBase;
+            _lineEffects.Add(new LineEffect(e.Tick, from, to, isKill, sourceType, ttl, isAttacker));
             _pulseEffects.Add(new PulseEffect(e.Tick, to, isKill));
         }
     }
@@ -457,12 +459,12 @@ public sealed class GameBoardControl : Control
             var alpha = GetFadedAlpha(maxAlpha: effect.IsKill ? 255 : 180, progress);
             var thickness = effect.IsKill ? baseLineThickness * 1.5 : baseLineThickness;
 
-            var brush = effect.IsKill ? attackerBrush : defenderBrush;
+            var brush = (effect.IsKill || effect.IsAttacker) ? attackerBrush : defenderBrush;
 
             if (effect.SourceType == TowerTypeDto.Flamethrower)
             {
                 // Rendu FLAMMES en CÔNE + PARTICULES
-                var fireColors = new[] { "#FF4500", "#FF8C00", "#FFD700", "#FFFFFF" };
+                var fireColors = new[] { "#FFFF00", "#FFD700", "#FF8C00", "#FF4500" }; // Du centre vers l'extérieur
                 var random = new Random(effect.SpawnTick + (int)effect.From.X + (int)effect.From.Y);
                 
                 var dir = new Vector(effect.To.X - effect.From.X, effect.To.Y - effect.From.Y);
@@ -472,8 +474,8 @@ public sealed class GameBoardControl : Control
                     dir /= length;
                     var perp = new Vector(-dir.Y, dir.X);
                     
-                    // 1. Dessiner le cône de lueur (fond du lance-flammes)
-                    var coneWidth = length * 0.25;
+                    // 1. Dessiner le cône principal (plus opaque)
+                    var coneWidth = length * 0.4; // Plus large
                     var p1 = effect.From;
                     var p2 = effect.To + perp * coneWidth;
                     var p3 = effect.To - perp * coneWidth;
@@ -486,19 +488,31 @@ public sealed class GameBoardControl : Control
                         geoCtx.LineTo(p3);
                         geoCtx.EndFigure(isClosed: true);
                     }
-                    context.DrawGeometry(new SolidColorBrush(Color.Parse("#FF4500"), (byte)(alpha * 0.2)), null, coneGeometry);
                     
-                    // 2. Dessiner les Particules (effet de projection)
-                    for (int i = 0; i < 15; i++)
+                    // Dégradé pour le cône
+                    var coneBrush = new RadialGradientBrush
+                    {
+                        Center = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
+                        GradientStops =
+                        {
+                            new GradientStop(Color.Parse("#FFFFFFFF"), 0.0),
+                            new GradientStop(Color.Parse("#FFFF4500"), 0.4),
+                            new GradientStop(Color.Parse("#00FF4500"), 1.0)
+                        }
+                    };
+                    context.DrawGeometry(new SolidColorBrush(Color.Parse("#FF4500"), (byte)(alpha * 0.4)), null, coneGeometry);
+                    
+                    // 2. Dessiner des "Boules de feu" (plus gros, moins pixels)
+                    for (int i = 0; i < 12; i++)
                     {
                         var dist = random.NextDouble() * length;
-                        var spread = (dist / length) * coneWidth; // S'élargit avec la distance
+                        var spread = (dist / length) * coneWidth;
                         var offset = perp * (random.NextDouble() * spread * 2 - spread);
                         var pos = effect.From + dir * dist + offset;
                         
-                        var pSize = (random.NextDouble() * 3 + 1.5) * (1.0 - progress);
+                        var pSize = (random.NextDouble() * 6 + 3.0) * (1.0 - progress);
                         var pColor = Color.Parse(fireColors[random.Next(fireColors.Length)]);
-                        var pBrush = new SolidColorBrush(pColor, (byte)(alpha * (0.5 + random.NextDouble() * 0.5)));
+                        var pBrush = new SolidColorBrush(pColor, (byte)(alpha * 0.8));
                         
                         context.DrawEllipse(pBrush, null, pos, pSize, pSize);
                     }
@@ -544,7 +558,7 @@ public sealed class GameBoardControl : Control
         return (byte)Math.Clamp(a, 0, 255);
     }
 
-    private readonly record struct LineEffect(int SpawnTick, Point From, Point To, bool IsKill, TowerTypeDto? SourceType, int Ttl);
+    private readonly record struct LineEffect(int SpawnTick, Point From, Point To, bool IsKill, TowerTypeDto? SourceType, int Ttl, bool IsAttacker);
 
     private readonly record struct PulseEffect(int SpawnTick, Point Center, bool IsKill);
 }

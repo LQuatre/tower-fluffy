@@ -276,10 +276,17 @@
                                         Background="{Binding CurrentTowerType, Converter={StaticResource TowerTypeToBrushConverter}, ConverterParameter=Flamethrower}"/>
                             </UniformGrid>
                             
-                            <TextBlock Text="CONSTRUCTION" Classes="hudLabel" HorizontalAlignment="Center" FontSize="10" Opacity="0.6" Margin="0,10,0,0"/>
-                            <Button Classes="game" Content="Acheter Tour (50/100 Or)" IsEnabled="False" Opacity="0.5" />
+                            <Button Classes="game" Content="Acheter Tour (50/200 Or)" IsEnabled="False" Opacity="0.5" />
                         </StackPanel>
                         <TextBlock Classes="muted" Text="Cliquez sur une cellule vide pour déployer une tour de défense." HorizontalAlignment="Center" TextAlignment="Center" />
+                        
+                        <!-- BLOC DE STATS DÉFENSEUR -->
+                        <Border Classes="hudChip" Background="#1500F2FF" BorderBrush="#3300F2FF" BorderThickness="1" Margin="0,10,0,0">
+                            <StackPanel Spacing="5" Margin="10">
+                                <TextBlock Text="SPÉCIFICATIONS TECHNIQUES" FontSize="10" FontWeight="Bold" Opacity="0.5" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                                <TextBlock Text="{Binding CurrentTowerStats}" FontSize="11" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
             </Border>
 
@@ -327,10 +334,26 @@
 
                         <StackPanel Spacing="10" Margin="0,15,0,0">
                             <TextBlock Text="DÉPLOIEMENT" Classes="hudLabel" HorizontalAlignment="Center" FontSize="10" Opacity="0.6"/>
-                            <Button Classes="game" Content="Envoyer Grunt (10 B)" Command="{Binding SendGruntCommand}" />
-                            <Button Classes="game" Content="Envoyer Brute (40 B)" Command="{Binding SendBruteCommand}" />
+                            <Button Classes="game" Content="Envoyer Soldat (12 B)" Command="{Binding SendSoldatCommand}" />
+                            <Button Classes="game" Content="Envoyer Brute (50 B)" Command="{Binding SendBruteCommand}" />
                         </StackPanel>
                         <TextBlock Classes="muted" Text="Envoyez des unités pour attaquer la base adverse." HorizontalAlignment="Center" TextAlignment="Center" />
+                        
+                        <!-- BLOC DE STATS ATTAQUANT -->
+                        <Border Classes="hudChip" Background="#15FF00E5" BorderBrush="#33FF00E5" BorderThickness="1" Margin="0,10,0,0">
+                            <StackPanel Spacing="8" Margin="10">
+                                <TextBlock Text="UNITÉS DISPONIBLES" FontSize="10" FontWeight="Bold" Opacity="0.5" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="SOLDAT:" FontSize="9" FontWeight="Bold" Foreground="{StaticResource AttackerBrush}" />
+                                    <TextBlock Text="{Binding SoldatStats}" FontSize="10" Opacity="0.8" />
+                                </StackPanel>
+                                <Separator Background="{StaticResource AttackerBrush}" Opacity="0.2" Height="1"/>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="BRUTE:" FontSize="9" FontWeight="Bold" Foreground="{StaticResource AttackerBrush}" />
+                                    <TextBlock Text="{Binding BruteStats}" FontSize="10" Opacity="0.8" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
             </Border>
         </Grid>
