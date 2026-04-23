@@ -59,8 +59,9 @@ export default function App() {
       setStatus('connected');
       await newConnection.invoke("GetActiveGames");
     } catch (err: any) {
-      console.error(err);
+      console.error("Connection error:", err);
       setStatus('error');
+      alert(`Connection failed: ${err.message}`);
     }
   };
 
