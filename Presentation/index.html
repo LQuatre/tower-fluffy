@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="fr">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>TowerFluffy - Présentation B3</title>
+
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reset.min.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/theme/black.min.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/plugin/highlight/monokai.min.css">
+        <style>
+            .reveal h1, .reveal h2, .reveal h3 { color: #00A3FF; text-transform: uppercase; font-weight: 900; letter-spacing: 5px; }
+            .accent { color: #FFB000; }
+            .highlight { background: rgba(0, 163, 255, 0.2); padding: 5px 15px; border-radius: 5px; }
+            section { text-align: left; }
+        </style>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<!-- TITRE -->
+				<section style="text-align: center;">
+					<h1>TOWER FLUFFY</h1>
+					<h3 class="accent">Déploiement Tactique B3</h3>
+					<p>Une expérience de Tower Defense asymétrique</p>
+					<div style="margin-top: 50px; font-size: 0.6em; opacity: 0.5;">Appuyez sur ESPACE pour avancer</div>
+				</section>
+
+				<!-- OBJECTIF -->
+				<section>
+					<h2>Le Concept</h2>
+					<ul>
+						<li><span class="highlight">Asymétrie</span> : Attaquant vs Défenseur</li>
+						<li><span class="highlight">Temps Réel</span> : Synchronisation SignalR</li>
+						<li><span class="highlight">Tactique</span> : Gestion de ressources et placement stratégique</li>
+					</ul>
+				</section>
+
+				<!-- ARCHITECTURE -->
+				<section>
+					<h2>Architecture Technique</h2>
+					<h3 class="accent" style="font-size: 0.8em;">Clean Architecture & .NET 9</h3>
+					<div style="display: flex; gap: 20px;">
+                        <div style="flex: 1; font-size: 0.7em;">
+                            <p><b>Domain</b> : Simulation pure, sans dépendances.</p>
+                            <p><b>Application</b> : Gestion des sessions et des commandes.</p>
+                            <p><b>UI.Desktop</b> : Avalonia UI + SukiUI (Modern Desktop).</p>
+                        </div>
+                        <div style="flex: 1; border-left: 1px solid #333; padding-left: 20px; font-size: 0.7em;">
+                            <p><b>Infrastructure</b> : Client SignalR (MessagePack).</p>
+                            <p><b>Server</b> : Hub ASP.NET Core & Groupes.</p>
+                        </div>
+                    </div>
+				</section>
+
+				<!-- RÉSEAU -->
+				<section>
+					<h2>Communication Réseau</h2>
+					<p>Utilisation de <span class="accent">SignalR Groups</span></p>
+					<pre><code class="language-csharp" data-trim data-noescape>
+// Isolation des joueurs dans des salles de combat
+await Groups.AddToGroupAsync(connectionId, gameId);
+
+// Diffusion des actions uniquement au groupe concerné
+await Clients.Group(gameId).ReceivePlayerAction(action);
+					</code></pre>
+                    <p style="font-size: 0.6em;">Protocole <b>MessagePack</b> pour une latence minimale.</p>
+				</section>
+
+				<!-- SIMULATION -->
+				<section>
+					<h2>Simulation Déterministe</h2>
+					<ul>
+						<li>Le serveur génère une <span class="accent">Seed</span> unique au lancement.</li>
+						<li>La simulation tourne à <span class="highlight">60 Ticks/seconde</span>.</li>
+						<li>Chaque client calcule sa propre frame : <b>Désynchronisation impossible</b>.</li>
+					</ul>
+				</section>
+
+                <!-- UI/UX -->
+				<section>
+					<h2>Identité Visuelle</h2>
+					<p>Look <span class="accent">Tactical HUD</span></p>
+					<div style="font-size: 0.8em;">
+                        <p>✓ Glassmorphism & Scanlines</p>
+                        <p>✓ Thème cockpit militaire (Bleu/Ambre)</p>
+                        <p>✓ Feedback sonore immersif (WPF MediaPlayer)</p>
+                    </div>
+				</section>
+
+				<!-- DEMO -->
+				<section style="text-align: center;">
+					<h1>DÉMONSTRATION</h1>
+					<h3 class="accent">READY FOR UPLINK?</h3>
+				</section>
+			</div>
+		</div>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/plugin/highlight/highlight.min.js"></script>
+		<script>
+			Reveal.initialize({
+				hash: true,
+				plugins: [ RevealHighlight ]
+			});
+		</script>
+	</body>
+</html>
