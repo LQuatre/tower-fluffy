@@ -12,6 +12,6 @@ export default defineConfig({
     },
   },
   server: {
-    allowedHosts: ["fivem.lquatre.fr"]
+    allowedHosts: ["fivem.lquatre.fr", "vps.lquatre.fr"]
   }
 })

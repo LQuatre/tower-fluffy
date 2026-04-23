@@ -38,6 +38,8 @@ export default function App() {
   const [newGameId, setNewGameId] = useState('');
   const [isInGame, setIsInGame] = useState(false);
   const [currentGameId, setCurrentGameId] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
 
   const connect = async () => {
     const hubUrl = getHubUrl();
@@ -53,6 +55,15 @@ export default function App() {
       setGames(gameList);
     });
 
+    newConnection.on("ReceiveGameStarted", (seed: number, startTime: number) => {
+      console.log("Game started with seed:", seed);
+      setGameStarted(true);
+    });
+
+    newConnection.on("ReceiveOpponentReady", (ready: boolean) => {
+      console.log("Opponent is ready:", ready);
+    });
+
     try {
       await newConnection.start();
       setConnection(newConnection);
@@ -65,6 +76,13 @@ export default function App() {
     }
   };
 
+  const toggleReady = async () => {
+    if (!connection) return;
+    const nextReady = !isReady;
+    setIsReady(nextReady);
+    await connection.invoke("SetReady", nextReady);
+  };
+
   const refreshGames = async () => {
     if (connection) {
       await connection.invoke("GetActiveGames");
@@ -74,21 +92,27 @@ export default function App() {
   const createGame = async () => {
     if (!connection || !newGameId) return;
     try {
+      console.log("Attempting to create/join game:", newGameId);
       await connection.invoke("JoinGame", newGameId);
       setCurrentGameId(newGameId);
       setIsInGame(true);
       refreshGames();
-    } catch (err: any) {}
+    } catch (err: any) {
+      console.error("Create game error:", err);
+    }
   };
 
   const joinGame = async (gameId: string) => {
     if (!connection) return;
     try {
+      console.log("Attempting to join game:", gameId);
       await connection.invoke("JoinGame", gameId);
       setCurrentGameId(gameId);
       setIsInGame(true);
       refreshGames();
-    } catch (err: any) {}
+    } catch (err: any) {
+      console.error("Join game error:", err);
+    }
   };
 
   return (
@@ -200,15 +224,33 @@ export default function App() {
       {isInGame && (
         <div className="fixed inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center p-6 z-50">
           <div className="max-w-md w-full p-8 border bg-card rounded-lg text-center shadow-xl">
-            <h2 className="text-2xl font-bold mb-2 uppercase tracking-tight">Connected</h2>
+            <h2 className="text-2xl font-bold mb-2 uppercase tracking-tight">
+              {gameStarted ? "Match Starting!" : "Connected"}
+            </h2>
             <p className="text-sm text-foreground/60 mb-8 font-mono">{currentGameId}</p>
             
-            <div className="p-4 bg-primary/5 border border-primary/20 rounded-md mb-8 text-sm text-primary">
-              <Users size={16} className="inline mr-2 animate-pulse" />
-              Waiting for match to start...
-            </div>
+            {gameStarted ? (
+              <div className="p-8 bg-green-500/10 border border-green-500/20 rounded-md mb-8 text-sm text-green-500 font-bold uppercase tracking-widest animate-bounce">
+                Deploying Combat Simulation...
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="p-4 bg-primary/5 border border-primary/20 rounded-md text-sm text-primary">
+                  <Users size={16} className="inline mr-2 animate-pulse" />
+                  Waiting for players to be ready...
+                </div>
+                
+                <Button 
+                  onClick={toggleReady} 
+                  variant={isReady ? "secondary" : "default"}
+                  className={cn("w-full h-14 text-lg font-black", isReady && "bg-green-600 text-white hover:bg-green-700")}
+                >
+                  {isReady ? "I'M READY (WAITING...)" : "MARK AS READY"}
+                </Button>
+              </div>
+            )}
 
-            <Button onClick={() => setIsInGame(false)} variant="outline" className="w-full">
+            <Button onClick={() => { setIsInGame(false); setIsReady(false); setGameStarted(false); }} variant="outline" className="w-full mt-4">
               Leave Lobby
             </Button>
           </div>
