@@ -334,6 +334,44 @@
                     </StackPanel>
             </Border>
         </Grid>
+
+        <!-- MODALE DE FIN DE PARTIE -->
+        <Border Background="#CC000000" IsVisible="{Binding IsGameFinished}" ZIndex="500">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="40">
+                <StackPanel Spacing="10" HorizontalAlignment="Center">
+                    <TextBlock Text="OPÉRATION TERMINÉE" FontSize="16" FontWeight="Bold" Opacity="0.5" LetterSpacing="4" HorizontalAlignment="Center" />
+                    <Rectangle Width="60" Height="2" Fill="{Binding GameResultColor}" HorizontalAlignment="Center" />
+                </StackPanel>
+
+                <TextBlock Text="{Binding GameResultMessage}" 
+                           FontSize="56" 
+                           FontWeight="Black" 
+                           Foreground="{Binding GameResultColor}" 
+                           HorizontalAlignment="Center" 
+                           TextAlignment="Center"
+                           MaxWidth="800"
+                           TextWrapping="Wrap">
+                    <TextBlock.Effect>
+                        <DropShadowEffect BlurRadius="20" Color="{Binding GameResultColor}" Opacity="0.4" />
+                    </TextBlock.Effect>
+                </TextBlock>
+
+                <Button Classes="game" 
+                        Command="{Binding ReplayCommand}" 
+                        Padding="40,20" 
+                        HorizontalAlignment="Center"
+                        FontSize="20"
+                        FontWeight="Bold">
+                    <StackPanel Orientation="Horizontal" Spacing="15">
+                        <Path Data="M12,5V1L7,6L12,11V7A8,8 0 0,1 20,15A8,8 0 0,1 12,23A8,8 0 0,1 4,15H2A10,10 0 0,0 12,25A10,10 0 0,0 22,15A10,10 0 0,0 12,5Z" 
+                              Fill="White" 
+                              Width="20" Height="20" 
+                              Stretch="Uniform" />
+                        <TextBlock Text="REJOUER / MATCHMAKING" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Border>
     </Grid>
 
 </Window>

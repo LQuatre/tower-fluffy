@@ -45,6 +45,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         SetFlamethrowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerTypeDto.Flamethrower; });
         ConnectCommand = ReactiveCommand.CreateFromTask(ExecuteConnect);
         StartSoloCommand = ReactiveCommand.Create(ExecuteStartSolo);
+        ReplayCommand = ReactiveCommand.Create(ExecuteReplay);
     }
 
     public string ServerUrl
@@ -131,8 +132,37 @@ public sealed class MainWindowViewModel : ViewModelBase
             this.RaisePropertyChanged(nameof(ActivePhaseLabel));
             this.RaisePropertyChanged(nameof(ActivePhaseTime));
             this.RaisePropertyChanged(nameof(IsDefenderPhase));
+            this.RaisePropertyChanged(nameof(IsGameFinished));
+            this.RaisePropertyChanged(nameof(GameResultMessage));
+            this.RaisePropertyChanged(nameof(GameResultColor));
         }
     }
+
+    public bool IsGameFinished => Snapshot.Hud.Phase == MatchPhaseDto.Finished;
+
+    public string GameResultMessage => Snapshot.Hud.Outcome switch
+    {
+        MatchOutcomeDto.DefenderVictory => SelectedRole switch
+        {
+            PlayerRole.Defender => "VICTOIRE ! LA BASE EST SAUVE.",
+            PlayerRole.Attacker => "DÉFAITE... L'ASSAUT A ÉCHOUÉ.",
+            _ => "FIN DE MISSION : DÉFENSE VICTORIEUSE"
+        },
+        MatchOutcomeDto.AttackerVictory => SelectedRole switch
+        {
+            PlayerRole.Attacker => "VICTOIRE ! LE NOYAU EST DÉTRUIT.",
+            PlayerRole.Defender => "DÉFAITE... LA BASE A SUCCOMBÉ.",
+            _ => "FIN DE MISSION : ATTAQUE VICTORIEUSE"
+        },
+        _ => "MATCH NUL"
+    };
+
+    public string GameResultColor => Snapshot.Hud.Outcome switch
+    {
+        MatchOutcomeDto.DefenderVictory => SelectedRole == PlayerRole.Defender ? "#00F2FF" : "#FF2E2E",
+        MatchOutcomeDto.AttackerVictory => SelectedRole == PlayerRole.Attacker ? "#FF00E5" : "#FF2E2E",
+        _ => "#FFFFFF"
+    };
 
     public string PreparationTimeFormatted => $"{Snapshot.Hud.PreparationTicksRemaining / 60.0:F1} sec";
     public string WaveSendTimeFormatted => $"{Snapshot.Hud.WaveSendTicksRemaining / 60.0:F1} sec";
@@ -170,6 +200,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ReactiveCommand<Unit, Unit> SetFlamethrowerCommand { get; }
     public ReactiveCommand<Unit, Unit> ConnectCommand { get; }
     public ReactiveCommand<Unit, Unit> StartSoloCommand { get; }
+    public ReactiveCommand<Unit, Unit> ReplayCommand { get; }
 
     public void Tick()
     {
@@ -286,6 +317,15 @@ public sealed class MainWindowViewModel : ViewModelBase
     private void ExecuteStartSolo()
     {
         IsGameStarted = true;
+    }
+
+    private void ExecuteReplay()
+    {
+        IsGameStarted = false;
+        IsReady = false;
+        IsOpponentReady = false;
+        // Optionnel : Re-créer une session propre
+        // _session.Reset(); // Si implémenté dans le domaine
     }
 
     private void HandleNetworkAction(PlayerAction action)
