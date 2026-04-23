@@ -157,15 +157,70 @@
             </StackPanel>
         </Border>
 
-        <!-- PHASE 2 : LOBBY / SALLE D'ATTENTE -->
+        <!-- PHASE 2 : LOBBY / LISTE DES PARTIES -->
         <Border Background="{StaticResource BaseBackgroundBrush}" IsVisible="{Binding IsLobbyVisible}" ZIndex="200">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="30" Width="600">
+                <StackPanel Spacing="10" HorizontalAlignment="Center">
+                    <TextBlock Text="LOBBY CENTRAL" FontSize="32" FontWeight="Black" HorizontalAlignment="Center" LetterSpacing="4" />
+                    <TextBlock Text="SÉLECTIONNEZ UNE MISSION OU CRÉEZ-EN UNE" FontSize="10" Opacity="0.5" FontWeight="Bold" LetterSpacing="2" HorizontalAlignment="Center" />
+                </StackPanel>
+
+                <Border Classes="panel" Padding="20">
+                    <StackPanel Spacing="15">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="PARTIES DISPONIBLES" FontWeight="Bold" Opacity="0.6" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Classes="game" Content="Rafraîchir" Command="{Binding RefreshGamesCommand}" />
+                        </Grid>
+                        
+                        <ListBox ItemsSource="{Binding AvailableGames}" Background="Transparent" MaxHeight="300">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Classes="panel" Margin="0,4" Padding="12" Background="#10FFFFFF">
+                                        <Grid ColumnDefinitions="*,Auto,Auto">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding GameId}" FontWeight="Bold" />
+                                                <TextBlock Text="{Binding PlayerCount, StringFormat='{}{0} joueur(s)'}" FontSize="10" Opacity="0.6" />
+                                            </StackPanel>
+                                            
+                                            <TextBlock Grid.Column="1" Text="DÉMARRÉE" Foreground="{StaticResource AccentBrush}" IsVisible="{Binding IsStarted}" VerticalAlignment="Center" Margin="0,0,15,0" FontSize="10" FontWeight="Bold" />
+                                            
+                                            <Button Grid.Column="2" Classes="game" Content="REJOINDRE" 
+                                                    Command="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext).JoinSpecificGameCommand}" 
+                                                    CommandParameter="{Binding GameId}"
+                                                    IsEnabled="{Binding !IsStarted}" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <Separator Background="#20FFFFFF" Height="1" />
+
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="CRÉER UNE NOUVELLE MISSION" FontSize="10" FontWeight="Bold" Opacity="0.6" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <TextBox x:Name="NewGameId" Watermark="Nom de la partie..." Background="#10FFFFFF" />
+                                <Button Grid.Column="1" Classes="game" Content="CRÉER" 
+                                        Command="{Binding JoinSpecificGameCommand}" 
+                                        CommandParameter="{Binding #NewGameId.Text}" />
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                
+                <Button Classes="game" Content="DÉCONNEXION" HorizontalAlignment="Center" Opacity="0.5" />
+            </StackPanel>
+        </Border>
+
+        <!-- PHASE 2.5 : WAITING ROOM (En attente d'adversaire) -->
+        <Border Background="{StaticResource BaseBackgroundBrush}" IsVisible="{Binding IsWaitingRoomVisible}" ZIndex="250">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="40" Width="500">
-                <TextBlock Text="SALLE D'ATTENTE" FontSize="32" FontWeight="Black" HorizontalAlignment="Center" LetterSpacing="4" />
+                <TextBlock Text="PRÉPARATION DU DÉPLOIEMENT" FontSize="28" FontWeight="Black" HorizontalAlignment="Center" LetterSpacing="4" />
                 
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="20">
                     <Border Grid.Column="0" Classes="panel" Padding="20">
                         <StackPanel Spacing="15" HorizontalAlignment="Center">
-                            <TextBlock Text="VOUS" FontWeight="Bold" Opacity="0.6" HorizontalAlignment="Center" />
+                            <TextBlock Text="VOTRE ÉTAT" FontWeight="Bold" Opacity="0.6" HorizontalAlignment="Center" />
                             <Ellipse Width="40" Height="40" Fill="{Binding IsReady, Converter={x:Static vm:ReadyToColorConverter.Instance}}" />
                             <TextBlock Text="{Binding SelectedRole}" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" />
                             <CheckBox Content="PRÊT" IsChecked="{Binding IsReady}" HorizontalAlignment="Center" Foreground="White" />
@@ -184,8 +239,10 @@
 
                 <StackPanel Spacing="10">
                     <ProgressBar IsIndeterminate="True" Height="2" Background="#10FFFFFF" Foreground="{StaticResource AccentBrush}" />
-                    <TextBlock Text="En attente de l'adversaire..." Classes="muted" HorizontalAlignment="Center" />
+                    <TextBlock Text="En attente de la synchronisation tactique..." Classes="muted" HorizontalAlignment="Center" />
                 </StackPanel>
+                
+                <Button Classes="game" Content="QUITTER LA SALLE" Command="{Binding ReplayCommand}" HorizontalAlignment="Center" />
             </StackPanel>
         </Border>
 

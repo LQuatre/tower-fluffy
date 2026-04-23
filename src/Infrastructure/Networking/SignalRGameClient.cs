@@ -33,6 +33,7 @@ public class SignalRGameClient : IGameHub
         _connection.On<PlayerAction>("ReceivePlayerAction", (action) => OnPlayerActionReceived?.Invoke(action));
         _connection.On<int, long>("ReceiveGameStarted", (seed, startTime) => OnGameStarted?.Invoke(seed, startTime));
         _connection.On<bool>("ReceiveOpponentReady", (isReady) => OnOpponentReady?.Invoke(isReady));
+        _connection.On<List<GameInfoDto>>("ReceiveGameList", (games) => OnGameListReceived?.Invoke(games));
     }
 
     public event Action<GameState>? OnGameStateReceived;
@@ -41,6 +42,7 @@ public class SignalRGameClient : IGameHub
     public event Action<PlayerAction>? OnPlayerActionReceived;
     public event Action<int, long>? OnGameStarted;
     public event Action<bool>? OnOpponentReady;
+    public event Action<List<GameInfoDto>>? OnGameListReceived;
 
     public async Task StartAsync()
     {
@@ -55,6 +57,11 @@ public class SignalRGameClient : IGameHub
     public async Task JoinGame(string gameId)
     {
         await _connection.InvokeAsync(nameof(JoinGame), gameId);
+    }
+
+    public async Task GetActiveGames()
+    {
+        await _connection.InvokeAsync(nameof(GetActiveGames));
     }
 
     public async Task SetReady(bool isReady)

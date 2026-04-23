@@ -8,6 +8,7 @@ public interface IGameHub
     Task SetReady(bool isReady);
     Task SendPlayerAction(PlayerAction action);
     Task SendChat(string message);
+    Task GetActiveGames();
 }
 
 public interface IGameClient
@@ -18,7 +19,10 @@ public interface IGameClient
     Task ReceivePlayerAction(PlayerAction action);
     Task ReceiveGameStarted(int seed, long startTimeUtc);
     Task ReceiveOpponentReady(bool isReady);
+    Task ReceiveGameList(List<GameInfoDto> games);
 }
+
+public record GameInfoDto(string GameId, int PlayerCount, bool IsStarted);
 
 public record PlayerAction(
     int PlayerId, 

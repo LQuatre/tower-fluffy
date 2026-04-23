@@ -24,7 +24,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     private bool _isReady;
     private bool _isGameStarted;
     private bool _isOpponentReady;
+    private bool _isInGameRoom;
     private string _serverUrl = "http://localhost:5128/gameHub";
+    private System.Collections.ObjectModel.ObservableCollection<GameInfoDto> _availableGames = new();
     private PlayerRole _selectedRole = PlayerRole.Both;
     private GridPositionDto? _movingTowerFrom;
     private TowerTypeDto _currentTowerType = TowerTypeDto.BasicShooter;
@@ -46,6 +48,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         SetBasicTowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerTypeDto.BasicShooter; });
         SetFlamethrowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerTypeDto.Flamethrower; });
         ConnectCommand = ReactiveCommand.CreateFromTask(ExecuteConnect);
+        RefreshGamesCommand = ReactiveCommand.CreateFromTask(ExecuteRefreshGames);
+        JoinSpecificGameCommand = ReactiveCommand.CreateFromTask<string>(ExecuteJoinSpecificGame);
         StartSoloCommand = ReactiveCommand.Create(ExecuteStartSolo);
         ReplayCommand = ReactiveCommand.Create(ExecuteReplay);
     }
@@ -56,6 +60,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         set => this.RaiseAndSetIfChanged(ref _serverUrl, value);
     }
 
+    public System.Collections.ObjectModel.ObservableCollection<GameInfoDto> AvailableGames => _availableGames;
+
     public bool IsConnected
     {
         get => _isConnected;
@@ -63,7 +69,19 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             this.RaiseAndSetIfChanged(ref _isConnected, value);
             this.RaisePropertyChanged(nameof(IsLobbyVisible));
+            this.RaisePropertyChanged(nameof(IsWaitingRoomVisible));
             this.RaisePropertyChanged(nameof(IsConnectionVisible));
+        }
+    }
+
+    public bool IsInGameRoom
+    {
+        get => _isInGameRoom;
+        private set 
+        {
+            this.RaiseAndSetIfChanged(ref _isInGameRoom, value);
+            this.RaisePropertyChanged(nameof(IsLobbyVisible));
+            this.RaisePropertyChanged(nameof(IsWaitingRoomVisible));
         }
     }
 
@@ -122,7 +140,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         private set => this.RaiseAndSetIfChanged(ref _isOpponentReady, value);
     }
 
-    public bool IsLobbyVisible => IsConnected && !IsGameStarted;
+    public bool IsLobbyVisible => IsConnected && !IsInGameRoom && !IsGameStarted;
+    public bool IsWaitingRoomVisible => IsConnected && IsInGameRoom && !IsGameStarted;
     public bool IsConnectionVisible => !IsConnected && !IsGameStarted;
     public bool IsSoloMode => SelectedRole == PlayerRole.Both;
 
@@ -219,6 +238,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ReactiveCommand<Unit, Unit> SetBasicTowerCommand { get; }
     public ReactiveCommand<Unit, Unit> SetFlamethrowerCommand { get; }
     public ReactiveCommand<Unit, Unit> ConnectCommand { get; }
+    public ReactiveCommand<Unit, Unit> RefreshGamesCommand { get; }
+    public ReactiveCommand<string, Unit> JoinSpecificGameCommand { get; }
     public ReactiveCommand<Unit, Unit> StartSoloCommand { get; }
     public ReactiveCommand<Unit, Unit> ReplayCommand { get; }
 
@@ -351,14 +372,16 @@ public sealed class MainWindowViewModel : ViewModelBase
                 IsGameStarted = true;
             });
             _networkClient.OnOpponentReady += (ready) => Avalonia.Threading.Dispatcher.UIThread.Post(() => IsOpponentReady = ready);
+            _networkClient.OnGameListReceived += (games) => Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                _availableGames.Clear();
+                foreach (var g in games) _availableGames.Add(g);
+            });
             
             await _networkClient.StartAsync();
-            await _networkClient.JoinGame("default-game");
+            IsConnected = true;
             
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => {
-                IsConnected = true;
-                LastError = null;
-            });
+            // On récupère la liste initiale
+            await _networkClient.GetActiveGames();
         }
         catch (System.Exception ex)
         {
@@ -372,6 +395,23 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
+    private async Task ExecuteRefreshGames()
+    {
+        if (_networkClient != null)
+        {
+            await _networkClient.GetActiveGames();
+        }
+    }
+
+    private async Task ExecuteJoinSpecificGame(string gameId)
+    {
+        if (_networkClient != null)
+        {
+            await _networkClient.JoinGame(gameId);
+            IsInGameRoom = true;
+        }
+    }
+
     private void ExecuteStartSolo()
     {
         IsGameStarted = true;
@@ -380,10 +420,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     private void ExecuteReplay()
     {
         IsGameStarted = false;
+        IsInGameRoom = false;
         IsReady = false;
         IsOpponentReady = false;
-        // Optionnel : Re-créer une session propre
-        // _session.Reset(); // Si implémenté dans le domaine
     }
 
     private void HandleNetworkAction(PlayerAction action)
