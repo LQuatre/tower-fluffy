@@ -37,27 +37,51 @@ public sealed record GameConfig(
                     TowerType.BasicShooter,
                     new TowerStats(
                         Cost: new Gold(50),
-                        DamagePerShot: new Damage(3),
-                        Range: 220,
-                        CooldownTicksBetweenShots: 20),
-                    Health: new Health(40)),
+                        DamagePerShot: new Damage(5),
+                        Range: 250,
+                        CooldownTicksBetweenShots: 30),
+                    Health: new Health(100)),
                 new TowerDefinition(
                     TowerType.Flamethrower,
                     new TowerStats(
                         Cost: new Gold(200),
-                        DamagePerShot: new Damage(2),
+                        DamagePerShot: new Damage(3),
                         Range: 180,
-                        CooldownTicksBetweenShots: 12),
-                    Health: new Health(50)),
+                        CooldownTicksBetweenShots: 8),
+                    Health: new Health(120)),
+                new TowerDefinition(
+                    TowerType.Sniper,
+                    new TowerStats(
+                        Cost: new Gold(150),
+                        DamagePerShot: new Damage(40),
+                        Range: 400,
+                        CooldownTicksBetweenShots: 60),
+                    Health: new Health(80)),
+                new TowerDefinition(
+                    TowerType.Cannon,
+                    new TowerStats(
+                        Cost: new Gold(300),
+                        DamagePerShot: new Damage(60),
+                        Range: 220,
+                        CooldownTicksBetweenShots: 60),
+                    Health: new Health(150)),
+                new TowerDefinition(
+                    TowerType.Laser,
+                    new TowerStats(
+                        Cost: new Gold(400),
+                        DamagePerShot: new Damage(10),
+                        Range: 300,
+                        CooldownTicksBetweenShots: 10),
+                    Health: new Health(150)),
             },
             Units: new[]
             {
                 new UnitDefinition(
                     UnitType.Soldat,
                     Cost: new Budget(12),
-                    Health: new Health(4),
-                    SpeedPerTick: 3,
-                    DamageToBase: new Damage(1),
+                    Health: new Health(20),
+                    SpeedPerTick: 2,
+                    DamageToBase: new Damage(5),
                     DamageToTower: new Damage(2),
                     AttackRange: 150,
                     AttackCooldownTicksBetweenAttacks: 40,
@@ -65,13 +89,43 @@ public sealed record GameConfig(
                 new UnitDefinition(
                     UnitType.Brute,
                     Cost: new Budget(60),
-                    Health: new Health(30),
+                    Health: new Health(80),
                     SpeedPerTick: 1,
-                    DamageToBase: new Damage(5),
+                    DamageToBase: new Damage(15),
                     DamageToTower: new Damage(10),
                     AttackRange: 180,
                     AttackCooldownTicksBetweenAttacks: 60,
                     LootGold: new Gold(30)),
+                new UnitDefinition(
+                    UnitType.Rapide,
+                    Cost: new Budget(20),
+                    Health: new Health(15),
+                    SpeedPerTick: 4,
+                    DamageToBase: new Damage(3),
+                    DamageToTower: new Damage(1),
+                    AttackRange: 100,
+                    AttackCooldownTicksBetweenAttacks: 30,
+                    LootGold: new Gold(15)),
+                new UnitDefinition(
+                    UnitType.TireurElite,
+                    Cost: new Budget(40),
+                    Health: new Health(30),
+                    SpeedPerTick: 2,
+                    DamageToBase: new Damage(8),
+                    DamageToTower: new Damage(8),
+                    AttackRange: 250,
+                    AttackCooldownTicksBetweenAttacks: 80,
+                    LootGold: new Gold(20)),
+                new UnitDefinition(
+                    UnitType.Tank,
+                    Cost: new Budget(100),
+                    Health: new Health(300),
+                    SpeedPerTick: 1,
+                    DamageToBase: new Damage(25),
+                    DamageToTower: new Damage(5),
+                    AttackRange: 120,
+                    AttackCooldownTicksBetweenAttacks: 50,
+                    LootGold: new Gold(50)),
             });
     }
 

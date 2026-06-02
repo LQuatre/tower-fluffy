@@ -4,6 +4,7 @@ namespace TowerFluffy.Domain.Combat;
 
 public sealed record Unit(
     int Id,
+    UnitType Type,
     int DistanceAlongPath,
     int SpeedPerTick,
     Damage DamageToBase,

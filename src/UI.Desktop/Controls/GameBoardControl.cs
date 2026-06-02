@@ -6,7 +6,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
-using TowerFluffy.Application.Game.Dtos;
+using TowerFluffy.Application.Game.Dtos.Combat;
+using TowerFluffy.Application.Game.Dtos.Environment;
+using TowerFluffy.Application.Game.Dtos.Match;
 
 namespace TowerFluffy.UI.Desktop.Controls;
 
@@ -245,7 +247,15 @@ public sealed class GameBoardControl : Control
 
         foreach (var tower in snapshot.Towers)
         {
-            var towerBrush = tower.Type == TowerTypeDto.Flamethrower ? new SolidColorBrush(Color.Parse("#FF4500")) : brush;
+            var towerBrush = tower.Type switch
+            {
+                TowerTypeDto.BasicShooter => brush, // Default defender color
+                TowerTypeDto.Flamethrower => new SolidColorBrush(Color.Parse("#FF4500")), // OrangeRed
+                TowerTypeDto.Sniper => new SolidColorBrush(Color.Parse("#FFD700")), // Gold
+                TowerTypeDto.Cannon => new SolidColorBrush(Color.Parse("#8A2BE2")), // BlueViolet
+                TowerTypeDto.Laser => new SolidColorBrush(Color.Parse("#00FF7F")), // SpringGreen
+                _ => brush
+            };
             var towerGlowBrush = new SolidColorBrush(towerBrush.Color, opacity: 0.2);
             var towerStrongPen = new Pen(towerBrush, thickness: 2);
 
@@ -263,7 +273,7 @@ public sealed class GameBoardControl : Control
             var coreRadius = cellSize * 0.1;
             context.DrawEllipse(towerBrush, null, outer.Center, coreRadius, coreRadius);
 
-            DrawHealthPips(context, tower.Health, anchor: new Point(outer.Left, outer.Top - 6), maxPips: 5, stroke: towerBrush);
+            DrawHealthBar(context, tower.Health, GetMaxHealth(tower.Type), new Point(outer.Left, outer.Top - 8), towerBrush, outer.Width);
         }
     }
 
@@ -273,12 +283,22 @@ public sealed class GameBoardControl : Control
         ISolidColorBrush brush,
         int cellSize)
     {
-        var strongPen = new Pen(brush, thickness: 2);
-        var trailBrush = new SolidColorBrush(brush.Color, opacity: 0.3);
-        var trailPen = new Pen(trailBrush, thickness: 2) { LineCap = PenLineCap.Round };
-
         foreach (var unit in snapshot.Units)
         {
+            var unitBrush = unit.Type switch
+            {
+                UnitTypeDto.Soldat => brush, // Default attacker color
+                UnitTypeDto.Brute => new SolidColorBrush(Color.Parse("#FF8C00")), // DarkOrange
+                UnitTypeDto.Rapide => new SolidColorBrush(Color.Parse("#FF1493")), // DeepPink
+                UnitTypeDto.TireurElite => new SolidColorBrush(Color.Parse("#4169E1")), // RoyalBlue
+                UnitTypeDto.Tank => new SolidColorBrush(Color.Parse("#8B0000")), // DarkRed
+                _ => brush
+            };
+            
+            var strongPen = new Pen(unitBrush, thickness: 2);
+            var trailBrush = new SolidColorBrush(unitBrush.Color, opacity: 0.3);
+            var trailPen = new Pen(trailBrush, thickness: 2) { LineCap = PenLineCap.Round };
+
             var center = new Point(unit.Position.X, unit.Position.Y);
             var direction = new Vector(unit.Direction.X, unit.Direction.Y);
             var radius = cellSize * 0.15;
@@ -286,9 +306,9 @@ public sealed class GameBoardControl : Control
             DrawTrail(context, center, direction, trailPen, length: radius * 2.5);
 
             var unitGeometry = CreateArrowGeometry(center, radius, direction);
-            context.DrawGeometry(new SolidColorBrush(brush.Color, 0.2), strongPen, unitGeometry);
+            context.DrawGeometry(new SolidColorBrush(unitBrush.Color, 0.2), strongPen, unitGeometry);
 
-            DrawHealthPips(context, unit.Health, anchor: new Point(center.X - radius, center.Y - radius - 8), maxPips: 5, stroke: brush);
+            DrawHealthBar(context, unit.Health, GetMaxHealth(unit.Type), new Point(center.X - radius, center.Y - radius - 8), unitBrush, radius * 2);
         }
     }
 
@@ -369,32 +389,41 @@ public sealed class GameBoardControl : Control
         return geometry;
     }
 
-    private static void DrawHealthPips(DrawingContext context, int health, Point anchor, int maxPips, IBrush stroke)
+    private static int GetMaxHealth(TowerTypeDto type) => type switch
     {
-        if (health <= 0)
-        {
-            return;
-        }
+        TowerTypeDto.BasicShooter => 100,
+        TowerTypeDto.Flamethrower => 120,
+        TowerTypeDto.Sniper => 80,
+        TowerTypeDto.Cannon => 150,
+        TowerTypeDto.Laser => 150,
+        _ => 100
+    };
 
-        var pipCount = Math.Min(health, maxPips);
-        var pipSize = 3.0;
-        var pipSpacing = 2.0;
-        var pipFill = CreateTintBrush(stroke, alpha: 150);
+    private static int GetMaxHealth(UnitTypeDto type) => type switch
+    {
+        UnitTypeDto.Soldat => 20,
+        UnitTypeDto.Brute => 80,
+        UnitTypeDto.Rapide => 15,
+        UnitTypeDto.TireurElite => 30,
+        UnitTypeDto.Tank => 300,
+        _ => 20
+    };
 
-        for (var index = 0; index < pipCount; index++)
-        {
-            var x = anchor.X + (index * (pipSize + pipSpacing));
-            var pipRect = new Rect(x, anchor.Y, pipSize, pipSize);
-            context.DrawRectangle(pipFill, pen: null, pipRect);
-        }
+    private static void DrawHealthBar(DrawingContext context, int health, int maxHealth, Point anchor, IBrush stroke, double width)
+    {
+        if (health <= 0) return;
 
-        if (health > maxPips)
-        {
-            var x = anchor.X + (pipCount * (pipSize + pipSpacing));
-            var plusPen = new Pen(pipFill, thickness: 1);
-            context.DrawLine(plusPen, new Point(x, anchor.Y + 1), new Point(x + 4, anchor.Y + 1));
-            context.DrawLine(plusPen, new Point(x + 2, anchor.Y - 1), new Point(x + 2, anchor.Y + 3));
-        }
+        double fraction = Math.Clamp((double)health / maxHealth, 0.0, 1.0);
+        var height = 4.0;
+        
+        var bgRect = new Rect(anchor.X, anchor.Y, width, height);
+        context.DrawRectangle(new SolidColorBrush(Color.Parse("#80000000")), null, bgRect);
+        
+        var fgRect = new Rect(anchor.X, anchor.Y, width * fraction, height);
+        var color = fraction > 0.5 ? Color.Parse("#32CD32") : (fraction > 0.2 ? Color.Parse("#FFA500") : Color.Parse("#FF0000"));
+        context.DrawRectangle(new SolidColorBrush(color), null, fgRect);
+
+        context.DrawRectangle(null, new Pen(stroke, 0.5), bgRect);
     }
 
     private static IBrush CreateTintBrush(IBrush source, byte alpha)

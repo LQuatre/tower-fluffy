@@ -224,6 +224,7 @@ public sealed record MatchState(
 
         var unit = new Unit(
             Id: NextEntityId,
+            Type: type,
             DistanceAlongPath: 0,
             SpeedPerTick: definition.SpeedPerTick,
             DamageToBase: definition.DamageToBase,

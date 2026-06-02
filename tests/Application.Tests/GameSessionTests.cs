@@ -1,7 +1,13 @@
 using TowerFluffy.Application.Game;
 using TowerFluffy.Application.Game.Dtos;
+using TowerFluffy.Application.Game.Dtos.Combat;
+using TowerFluffy.Application.Game.Dtos.Environment;
+using TowerFluffy.Application.Game.Dtos.Match;
+using TowerFluffy.Domain.Combat;
+using TowerFluffy.Domain.Shared;
 using TowerFluffy.Domain.Match;
-using TowerFluffy.Domain.Simulation;
+using TowerFluffy.Domain.Engine;
+using TowerFluffy.Domain.Environment;
 using Xunit;
 
 namespace TowerFluffy.Application.Tests;

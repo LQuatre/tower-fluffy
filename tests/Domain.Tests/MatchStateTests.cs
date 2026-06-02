@@ -1,7 +1,11 @@
 using System;
+using TowerFluffy.Domain.Combat;
+using TowerFluffy.Domain.Shared;
 using TowerFluffy.Domain.Match;
-using TowerFluffy.Domain.Simulation;
+using TowerFluffy.Domain.Engine;
+using TowerFluffy.Domain.Environment;
 using System.Linq;
+using Xunit;
 using Xunit;
 
 namespace TowerFluffy.Domain.Tests;

@@ -44,6 +44,7 @@ public static class GameSnapshotMapper
         var units = state.Simulation.Units
             .Select(u => new UnitDto(
                 Id: u.Id,
+                Type: (UnitTypeDto)u.Type,
                 Position: ToWorldPositionDto(map.Path.GetPositionAtDistance(u.DistanceAlongPath)),
                 Direction: ToWorldPositionDto(map.Path.GetDirectionAtDistance(u.DistanceAlongPath)),
                 Health: u.Health.Value,

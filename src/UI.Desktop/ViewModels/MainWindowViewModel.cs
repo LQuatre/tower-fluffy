@@ -28,7 +28,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private bool _isGameStarted;
     private bool _isOpponentReady;
     private bool _isInGameRoom;
-    private string _serverUrl = "http://vps.lquatre.fr:5128/gameHub";
+    private string _serverUrl = "http://localhost:5128/gameHub";
     private System.Collections.ObjectModel.ObservableCollection<GameInfoDto> _availableGames = new();
     private PlayerRole _selectedRole = PlayerRole.Both;
     private GridPositionDto? _movingTowerFrom;
@@ -47,9 +47,15 @@ public sealed class MainWindowViewModel : ViewModelBase
         SkipPreparationCommand = ReactiveCommand.Create(ExecuteSkipPreparation);
         SendSoldatCommand = ReactiveCommand.Create(ExecuteSendSoldat);
         SendBruteCommand = ReactiveCommand.Create(ExecuteSendBrute);
+        SendRapideCommand = ReactiveCommand.Create(ExecuteSendRapide);
+        SendTireurEliteCommand = ReactiveCommand.Create(ExecuteSendTireurElite);
+        SendTankCommand = ReactiveCommand.Create(ExecuteSendTank);
         PlaceTowerCommand = ReactiveCommand.Create<GridPositionDto>(ExecutePlaceTower);
         SetBasicTowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerTypeDto.BasicShooter; });
         SetFlamethrowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerTypeDto.Flamethrower; });
+        SetSniperTowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerTypeDto.Sniper; });
+        SetCannonTowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerTypeDto.Cannon; });
+        SetLaserTowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerTypeDto.Laser; });
         ConnectCommand = ReactiveCommand.CreateFromTask(ExecuteConnect);
         RefreshGamesCommand = ReactiveCommand.CreateFromTask(ExecuteRefreshGames);
         JoinSpecificGameCommand = ReactiveCommand.CreateFromTask<string>(ExecuteJoinSpecificGame);
@@ -58,6 +64,9 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         // Connexion automatique au démarrage
         Task.Run(async () => await ExecuteConnect());
+
+        // Démarrer la musique en boucle
+        SoundEffects.PlayTheme();
     }
 
     public string ServerUrl
@@ -134,11 +143,6 @@ public sealed class MainWindowViewModel : ViewModelBase
             this.RaisePropertyChanged(nameof(IsLobbyVisible));
             this.RaisePropertyChanged(nameof(IsWaitingRoomVisible));
             this.RaisePropertyChanged(nameof(IsConnectionVisible));
-            
-            if (value)
-            {
-                SoundEffects.StopTheme();
-            }
         }
     }
 
@@ -206,8 +210,14 @@ public sealed class MainWindowViewModel : ViewModelBase
     // COÛTS TACTIQUES (Synchronisés avec GameConfig)
     public int BasicTowerCost => 50;
     public int FlamethrowerCost => 200;
+    public int SniperTowerCost => 150;
+    public int CannonTowerCost => 300;
+    public int LaserTowerCost => 400;
     public int SoldatCost => 12;
     public int BruteCost => 60;
+    public int RapideCost => 20;
+    public int TireurEliteCost => 40;
+    public int TankCost => 100;
 
     public string PhaseFormatted => Snapshot.Hud.Phase switch
     {
@@ -238,20 +248,32 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public string CurrentTowerStats => CurrentTowerType switch
     {
-        TowerTypeDto.BasicShooter => "Dégâts: 3 | Portée: 220 | Cadence: 0.3s | PV: 40",
-        TowerTypeDto.Flamethrower => "Dégâts: 2 | Portée: 180 | Cadence: 0.2s | PV: 50",
+        TowerTypeDto.BasicShooter => "Dégâts: 5 | Portée: 250 | Cadence: 0.5s | PV: 100",
+        TowerTypeDto.Flamethrower => "Dégâts: 3 | Portée: 180 | Cadence: 0.1s | PV: 120",
+        TowerTypeDto.Sniper => "Dégâts: 40 | Portée: 400 | Cadence: 1.0s | PV: 80",
+        TowerTypeDto.Cannon => "Dégâts: 60 | Portée: 220 | Cadence: 1.0s | PV: 150",
+        TowerTypeDto.Laser => "Dégâts: 10 | Portée: 300 | Cadence: 0.15s | PV: 150",
         _ => ""
     };
 
     public string SoldatStats => "PV: 4 | Vitesse: 3 | Dégâts: 2 | Portée: 150";
     public string BruteStats => "PV: 30 | Vitesse: 1 | Dégâts: 10 | Portée: 180";
+    public string RapideStats => "PV: 8 | Vitesse: 5 | Dégâts: 1 | Portée: 100";
+    public string TireurEliteStats => "PV: 15 | Vitesse: 2 | Dégâts: 8 | Portée: 250";
+    public string TankStats => "PV: 100 | Vitesse: 1 | Dégâts: 5 | Portée: 120";
 
     public ReactiveCommand<Unit, Unit> SkipPreparationCommand { get; }
     public ReactiveCommand<Unit, Unit> SendSoldatCommand { get; }
     public ReactiveCommand<Unit, Unit> SendBruteCommand { get; }
+    public ReactiveCommand<Unit, Unit> SendRapideCommand { get; }
+    public ReactiveCommand<Unit, Unit> SendTireurEliteCommand { get; }
+    public ReactiveCommand<Unit, Unit> SendTankCommand { get; }
     public ReactiveCommand<GridPositionDto, Unit> PlaceTowerCommand { get; }
     public ReactiveCommand<Unit, Unit> SetBasicTowerCommand { get; }
     public ReactiveCommand<Unit, Unit> SetFlamethrowerCommand { get; }
+    public ReactiveCommand<Unit, Unit> SetSniperTowerCommand { get; }
+    public ReactiveCommand<Unit, Unit> SetCannonTowerCommand { get; }
+    public ReactiveCommand<Unit, Unit> SetLaserTowerCommand { get; }
     public ReactiveCommand<Unit, Unit> ConnectCommand { get; }
     public ReactiveCommand<Unit, Unit> RefreshGamesCommand { get; }
     public ReactiveCommand<string, Unit> JoinSpecificGameCommand { get; }
@@ -288,16 +310,32 @@ public sealed class MainWindowViewModel : ViewModelBase
             {
                 if (ev.SourceTowerType == TowerTypeDto.Flamethrower)
                 {
-                    SoundEffects.PlayFlamme();
+                    SoundEffects.PlayFlame();
+                }
+                else if (ev.SourceTowerType == TowerTypeDto.Laser)
+                {
+                    SoundEffects.PlayOrbital();
+                }
+                else if (ev.SourceTowerType == TowerTypeDto.Cannon)
+                {
+                    SoundEffects.PlayCannon();
                 }
                 else
                 {
-                    SoundEffects.PlayPiou();
+                    SoundEffects.PlayLaser();
                 }
             }
             else if (ev.Kind == CombatEventKindDto.UnitAttackTower || ev.Kind == CombatEventKindDto.UnitHitBase)
             {
-                SoundEffects.PlayPiou();
+                var unit = System.Linq.Enumerable.FirstOrDefault(Snapshot.Units, u => u.Id == ev.SourceId);
+                if (unit != null && unit.Type == UnitTypeDto.Tank)
+                {
+                    SoundEffects.PlayCannon();
+                }
+                else
+                {
+                    SoundEffects.PlayLaser();
+                }
             }
         }
     }
@@ -320,6 +358,27 @@ public sealed class MainWindowViewModel : ViewModelBase
         if (!CanSendUnits) return;
         Apply(_session.SendUnit(UnitTypeDto.Brute));
         BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitTypeDto.Brute);
+    }
+
+    private void ExecuteSendRapide()
+    {
+        if (!CanSendUnits) return;
+        Apply(_session.SendUnit(UnitTypeDto.Rapide));
+        BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitTypeDto.Rapide);
+    }
+
+    private void ExecuteSendTireurElite()
+    {
+        if (!CanSendUnits) return;
+        Apply(_session.SendUnit(UnitTypeDto.TireurElite));
+        BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitTypeDto.TireurElite);
+    }
+
+    private void ExecuteSendTank()
+    {
+        if (!CanSendUnits) return;
+        Apply(_session.SendUnit(UnitTypeDto.Tank));
+        BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitTypeDto.Tank);
     }
 
     private void ExecutePlaceTower(GridPositionDto position)
@@ -431,6 +490,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     private void ExecuteStartSolo()
     {
         _session = GameSession.CreateMvp();
+        _gameStartTime = DateTime.UtcNow;
+        _totalTicksProcessed = 0;
         Snapshot = _session.Snapshot;
         IsGameStarted = true;
     }

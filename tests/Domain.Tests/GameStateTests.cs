@@ -1,6 +1,10 @@
 using System;
-using TowerFluffy.Domain.Simulation;
+using TowerFluffy.Domain.Combat;
+using TowerFluffy.Domain.Shared;
+using TowerFluffy.Domain.Engine;
+using TowerFluffy.Domain.Environment;
 using TowerFluffy.Domain.Match;
+using Xunit;
 using Xunit;
 
 namespace TowerFluffy.Domain.Tests;
@@ -24,6 +28,7 @@ public sealed class GameStateTests
         var map = CreateStraightMap(length: 3_000);
         var unit = new Unit(
             Id: 1,
+            Type: UnitType.Soldat,
             DistanceAlongPath: 0,
             SpeedPerTick: 1_000,
             DamageToBase: new Damage(1),
@@ -49,6 +54,7 @@ public sealed class GameStateTests
         var map = CreateStraightMap(length: 3_000);
         var unit = new Unit(
             Id: 1,
+            Type: UnitType.Soldat,
             DistanceAlongPath: 2_500,
             SpeedPerTick: 1_000,
             DamageToBase: new Damage(3),
@@ -85,6 +91,7 @@ public sealed class GameStateTests
         var map = CreateStraightMapThroughCellCenters(length: 3_000, cellSize: 100);
         var unit = new Unit(
             Id: 1,
+            Type: UnitType.Soldat,
             DistanceAlongPath: 0,
             SpeedPerTick: 1_000,
             DamageToBase: new Damage(1),
@@ -130,6 +137,7 @@ public sealed class GameStateTests
         var map = CreateStraightMapThroughCellCenters(length: 3_000, cellSize: 100);
         var unit = new Unit(
             Id: 1,
+            Type: UnitType.Soldat,
             DistanceAlongPath: 0,
             SpeedPerTick: 1_000,
             DamageToBase: new Damage(1),
@@ -173,6 +181,7 @@ public sealed class GameStateTests
         var map = CreateStraightMapThroughCellCenters(length: 3_000, cellSize: 100);
         var unit = new Unit(
             Id: 1,
+            Type: UnitType.Soldat,
             DistanceAlongPath: 0,
             SpeedPerTick: 0,
             DamageToBase: new Damage(1),
@@ -208,7 +217,7 @@ public sealed class GameStateTests
 
     private static Map CreateStraightMap(int length)
     {
-        var path = new TowerFluffy.Domain.Simulation.Path(new[] { new WorldPosition(0, 0), new WorldPosition(length, 0) });
+        var path = new TowerFluffy.Domain.Environment.Path(new[] { new WorldPosition(0, 0), new WorldPosition(length, 0) });
         var grid = new Grid(Width: 10, Height: 10, CellSize: 100);
         return new Map(path, grid, blockedCells: Array.Empty<GridPosition>());
     }
@@ -217,7 +226,7 @@ public sealed class GameStateTests
     {
         var start = new WorldPosition(cellSize / 2, cellSize / 2);
         var end = new WorldPosition((cellSize / 2) + length, cellSize / 2);
-        var path = new TowerFluffy.Domain.Simulation.Path(new[] { start, end });
+        var path = new TowerFluffy.Domain.Environment.Path(new[] { start, end });
         var grid = new Grid(Width: 10, Height: 10, CellSize: cellSize);
         return new Map(path, grid, blockedCells: Array.Empty<GridPosition>());
     }
