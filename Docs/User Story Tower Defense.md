@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | US | 1,1 | Joueur M'amuser |
 | US | 1,2 | Joueur Contrôler la vitesse du jeu |
-| US | 1,3 | Joueur Pouvoir jouer avec/sans Joueur remplacer par une IA |
+| US | 1,3 | Joueur Pouvoir jouer en ligne ou en local |
 | US | 1,4 | Défenseur Protéger mes tours |
 | US | 1,5 | Défenseur Utiliser des ressources |
 | US | 1,6 | Défenseur Placer mes tours |
@@ -20,10 +20,9 @@
 | US | 1,14 | Défenseur Voir la santé restante des ennemis |
 | US | 1,15 | Attaquant Attaquer les camps adverses |
 | US | 1,16 | Attaquant Gagner des ressources en attaquant |
-| US | 1,17 | Attaquant Cibler une zone ou un chemin |
-| US | 1,18 | Attaquant Choisir le type d'unité |
-| US | 1,19 | Attaquant Voir le pourcentage de progression de l’attaque |
-| US | 1,20 | Attaquant Envoyer des unités |
+| US | 1,17 | Attaquant Choisir le type d'unité |
+| US | 1,18 | Attaquant Voir le pourcentage de progression de l’attaque |
+| US | 1,19 | Attaquant Envoyer des unités |
 
 ## CritÃ¨res / exigences
 
@@ -31,7 +30,7 @@
 | --- | --- |
 | Jouer au jeu | Must |
 | Passer les moments ou la défense est bien établie | Should |
-| Avoir une expérience de jeu agréable en Solo ou Multijoueur | Should |
+| Avoir une expérience de jeu agréable en Solo local ou Multijoueur | Should |
 | Sécuriser ma base | Must |
 | Améliorer mes tours | Must |
 | Défendre ma base | Must |
@@ -39,13 +38,12 @@
 | Récolter des ressources pour améliorer ma base | Must |
 | Donner un aspect survie au jeu | Must |
 | Ajuster la stratégie de survie | Must |
-| Améliorer les défenses de ma base | Should |
+| Voir de nouveaux types de vagues | Should |
 | Optimiser ma défense | Should |
 | Diversifier le type de défense | Must |
 | Comment les éliminer efficacement | Must |
 | Réduire leurs défenses | Must |
 | Améliorer mes troupes | Must |
-| Surprendre l'ennemi | Must |
 | Adapter ma stratégie d'attaque | Must |
 | Ajuster ma stratégie en temps réel | Should |
 | Lancer une attaque contre l’ennemi | Must |
