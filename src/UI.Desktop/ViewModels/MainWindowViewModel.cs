@@ -51,6 +51,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         SendTireurEliteCommand = ReactiveCommand.Create(ExecuteSendTireurElite);
         SendTankCommand = ReactiveCommand.Create(ExecuteSendTank);
         PlaceTowerCommand = ReactiveCommand.Create<GridPositionDto>(ExecutePlaceTower);
+        SellTowerCommand = ReactiveCommand.Create<GridPositionDto>(ExecuteSellTower);
         SetBasicTowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerTypeDto.BasicShooter; });
         SetFlamethrowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerTypeDto.Flamethrower; });
         SetSniperTowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerTypeDto.Sniper; });
@@ -269,6 +270,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ReactiveCommand<Unit, Unit> SendTireurEliteCommand { get; }
     public ReactiveCommand<Unit, Unit> SendTankCommand { get; }
     public ReactiveCommand<GridPositionDto, Unit> PlaceTowerCommand { get; }
+    public ReactiveCommand<GridPositionDto, Unit> SellTowerCommand { get; }
     public ReactiveCommand<Unit, Unit> SetBasicTowerCommand { get; }
     public ReactiveCommand<Unit, Unit> SetFlamethrowerCommand { get; }
     public ReactiveCommand<Unit, Unit> SetSniperTowerCommand { get; }
@@ -429,6 +431,28 @@ public sealed class MainWindowViewModel : ViewModelBase
         _movingTowerFrom = null;
     }
 
+    private void ExecuteSellTower(GridPositionDto position)
+    {
+        if (!CanPlaceTower) return;
+
+        if (Snapshot.Hud.Phase != MatchPhaseDto.Preparation)
+        {
+            LastError = "ACTION IMPOSSIBLE : Attendez la phase de préparation.";
+            return;
+        }
+
+        var result = _session.SellTower(position);
+        if (result.IsSuccess)
+        {
+            BroadcastAction(PlayerActionKind.SellTower, x: position.X, y: position.Y);
+            Apply(result);
+        }
+        else
+        {
+            LastError = result.ErrorMessage;
+        }
+    }
+
     private async Task ExecuteConnect()
     {
         IsConnecting = true;
@@ -533,6 +557,12 @@ public sealed class MainWindowViewModel : ViewModelBase
                     break;
                 case PlayerActionKind.SkipPreparation:
                     Apply(_session.SkipPreparation());
+                    break;
+                case PlayerActionKind.SellTower:
+                    if (action.X.HasValue && action.Y.HasValue)
+                    {
+                        Apply(_session.SellTower(new GridPositionDto(action.X.Value, action.Y.Value)));
+                    }
                     break;
             }
         });

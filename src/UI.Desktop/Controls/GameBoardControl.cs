@@ -23,6 +23,9 @@ public sealed class GameBoardControl : Control
     public static readonly StyledProperty<ICommand?> PlaceTowerCommandProperty =
         AvaloniaProperty.Register<GameBoardControl, ICommand?>(nameof(PlaceTowerCommand));
 
+    public static readonly StyledProperty<ICommand?> SellTowerCommandProperty =
+        AvaloniaProperty.Register<GameBoardControl, ICommand?>(nameof(SellTowerCommand));
+
     public GameSnapshotDto? Snapshot
     {
         get => GetValue(SnapshotProperty);
@@ -33,6 +36,12 @@ public sealed class GameBoardControl : Control
     {
         get => GetValue(PlaceTowerCommandProperty);
         set => SetValue(PlaceTowerCommandProperty, value);
+    }
+
+    public ICommand? SellTowerCommand
+    {
+        get => GetValue(SellTowerCommandProperty);
+        set => SetValue(SellTowerCommandProperty, value);
     }
 
     private readonly List<LineEffect> _lineEffects = new();
@@ -115,6 +124,16 @@ public sealed class GameBoardControl : Control
 
         // On ne déclenche le "Pressed" que s'il y a une tour à ramasser
         var hasTower = snapshot.Towers.Any(t => t.Cell.X == cellX && t.Cell.Y == cellY);
+
+        if (e.ClickCount == 2)
+        {
+            var sellCommand = SellTowerCommand;
+            if (hasTower && sellCommand != null && sellCommand.CanExecute(cell))
+            {
+                sellCommand.Execute(cell);
+                return;
+            }
+        }
 
         var command = PlaceTowerCommand;
         if (hasTower && command != null && command.CanExecute(cell))

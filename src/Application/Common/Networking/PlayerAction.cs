@@ -6,7 +6,8 @@ public enum PlayerActionKind
     SendWave,
     UpgradeTower,
     MoveTower,
-    SkipPreparation
+    SkipPreparation,
+    SellTower
 }
 
 public record PlayerAction(

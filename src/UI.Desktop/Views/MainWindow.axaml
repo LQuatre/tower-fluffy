@@ -279,7 +279,7 @@
                 </Border>
 
                 <Viewbox Grid.Column="1" Stretch="Uniform" Margin="40,0">
-                    <controls:GameBoardControl Snapshot="{Binding Snapshot}" PlaceTowerCommand="{Binding PlaceTowerCommand}" />
+                    <controls:GameBoardControl Snapshot="{Binding Snapshot}" PlaceTowerCommand="{Binding PlaceTowerCommand}" SellTowerCommand="{Binding SellTowerCommand}" />
                 </Viewbox>
 
                 <Border Grid.Column="2" Background="#151921" CornerRadius="16" Padding="25" IsVisible="{Binding CanSendUnits}" BorderBrush="#80FFFFFF" BorderThickness="1">

@@ -90,6 +90,13 @@ public sealed class GameSession
         return Apply(result);
     }
 
+    public CommandResult SellTower(GridPositionDto position)
+    {
+        var domainPosition = new GridPosition(position.X, position.Y);
+        var result = _state.SellTower(domainPosition);
+        return Apply(result);
+    }
+
     public CommandResult SendUnit(UnitTypeDto type)
     {
         var domainType = (UnitType)type;

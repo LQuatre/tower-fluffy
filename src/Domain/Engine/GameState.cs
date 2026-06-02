@@ -81,6 +81,11 @@ public sealed class GameState
         return new GameState(Tick, BaseHealth, _units, updatedTowers);
     }
 
+    public GameState WithRemovedTower(int towerId)
+    {
+        return new GameState(Tick, BaseHealth, _units, _towers.Where(t => t.Id != towerId));
+    }
+
     private static UnitPhaseResult ApplyUnitPhase(Tick tick, Map map, Unit[] units, Tower[] towers)
     {
         if (units.Length == 0)

@@ -199,6 +199,37 @@ public sealed record MatchState(
         return DomainResult<MatchState>.Success(updated);
     }
 
+    public DomainResult<MatchState> SellTower(GridPosition position)
+    {
+        if (Outcome != MatchOutcome.None)
+        {
+            return DomainResult<MatchState>.Failure("match.finished", "Le match est terminé.");
+        }
+
+        if (Phase != MatchPhase.Preparation)
+        {
+            return DomainResult<MatchState>.Failure("tower.phase", "Les tours ne peuvent être vendues que pendant la préparation.");
+        }
+
+        var tower = Simulation.Towers.FirstOrDefault(t => t.Position == position);
+        if (tower == null)
+        {
+            return DomainResult<MatchState>.Failure("tower.notfound", "Aucune tour à cet emplacement.");
+        }
+
+        var definition = Config.GetTower(tower.Type);
+        var refundGold = new Gold((int)(definition.Stats.Cost.Value * 0.75));
+
+        var updated = this with
+        {
+            DefenderGold = DefenderGold.Add(refundGold),
+            Simulation = Simulation.WithRemovedTower(tower.Id),
+            LastCombatEvents = Array.Empty<CombatEvent>(),
+        };
+
+        return DomainResult<MatchState>.Success(updated);
+    }
+
     public DomainResult<MatchState> SendUnit(UnitType type)
     {
         if (Outcome != MatchOutcome.None)
