@@ -1,7 +1,10 @@
 using TowerFluffy.Application.Game;
-using TowerFluffy.Application.Game.Dtos;
+using TowerFluffy.Application.Game.Dtos.Combat;
+using TowerFluffy.Application.Game.Dtos.Environment;
+using TowerFluffy.Application.Game.Dtos.Match;
 using TowerFluffy.Application.Common.Networking;
 using TowerFluffy.Infrastructure.Networking;
+using TowerFluffy.UI.Desktop.Services;
 using ReactiveUI;
 using System;
 using System.Globalization;
@@ -501,52 +504,4 @@ public enum PlayerRole
     Both,
     Attacker,
     Defender
-}
-
-public class ReadyToColorConverter : Avalonia.Data.Converters.IValueConverter
-{
-    public static readonly ReadyToColorConverter Instance = new();
-
-    public object? Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
-    {
-        bool ready = value is bool b && b;
-        
-        if (parameter is string p && p == "StatusText")
-        {
-            return ready ? "PRÊT" : "ATTENTE";
-        }
-
-        if (ready)
-        {
-            return Avalonia.Media.Brush.Parse("#10B981"); // Emerald
-        }
-        return Avalonia.Media.Brush.Parse("#374151"); // Muted Gray
-    }
-
-    public object? ConvertBack(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-public class TowerTypeToBrushConverter : Avalonia.Data.Converters.IValueConverter
-{
-    public static readonly TowerTypeToBrushConverter Instance = new();
-
-    public object? Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
-    {
-        if (value is TowerTypeDto currentType && parameter is string targetTypeStr)
-        {
-            if (currentType.ToString() == targetTypeStr)
-            {
-                return Avalonia.Media.Brush.Parse("#00A3FF"); // Blue selection
-            }
-        }
-        return Avalonia.Media.Brush.Parse("#1F242E"); // Dark Slate
-    }
-
-    public object? ConvertBack(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
-    {
-        throw new NotImplementedException();
-    }
 }

@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using TowerFluffy.Domain.Simulation;
+using TowerFluffy.Domain.Shared;
+using TowerFluffy.Domain.Combat;
 
 namespace TowerFluffy.Domain.Match;
 

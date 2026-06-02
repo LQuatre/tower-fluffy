@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using TowerFluffy.UI.Desktop.ViewModels;
 using TowerFluffy.UI.Desktop.Views;
+using TowerFluffy.UI.Desktop.Services;
 
 namespace TowerFluffy.UI.Desktop;
 

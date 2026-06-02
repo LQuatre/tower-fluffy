@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using TowerFluffy.Application.Common.Networking;
-using TowerFluffy.Domain.Simulation;
+using TowerFluffy.Domain.Engine;
+using TowerFluffy.Domain.Combat;
 using System.Collections.Concurrent;
 
 namespace TowerFluffy.Server.Hubs;

@@ -1,7 +1,12 @@
 using System;
-using TowerFluffy.Application.Game.Dtos;
+using TowerFluffy.Application.Game.Dtos.Combat;
+using TowerFluffy.Application.Game.Dtos.Environment;
+using TowerFluffy.Application.Game.Dtos.Match;
 using TowerFluffy.Domain.Match;
-using TowerFluffy.Domain.Simulation;
+using TowerFluffy.Domain.Shared;
+using TowerFluffy.Domain.Combat;
+using TowerFluffy.Domain.Environment;
+using TowerFluffy.Domain.Engine;
 
 namespace TowerFluffy.Application.Game;
 

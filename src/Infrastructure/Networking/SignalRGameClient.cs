@@ -3,7 +3,8 @@ using MessagePack.Resolvers;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using TowerFluffy.Application.Common.Networking;
-using TowerFluffy.Domain.Simulation;
+using TowerFluffy.Domain.Engine;
+using TowerFluffy.Domain.Combat;
 
 namespace TowerFluffy.Infrastructure.Networking;
 

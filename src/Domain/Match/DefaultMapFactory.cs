@@ -1,5 +1,7 @@
 using System.Collections.Generic;
-using TowerFluffy.Domain.Simulation;
+using TowerFluffy.Domain.Shared;
+using TowerFluffy.Domain.Environment;
+using GamePath = TowerFluffy.Domain.Environment.Path;
 
 namespace TowerFluffy.Domain.Match;
 
@@ -64,7 +66,7 @@ public static class DefaultMapFactory
                 (cell.Y * cellSize) + (cellSize / 2)));
         }
 
-        var path = new TowerFluffy.Domain.Simulation.Path(waypoints.ToArray());
+        var path = new GamePath(waypoints.ToArray());
 
         return new Map(path, grid, blocked);
     }

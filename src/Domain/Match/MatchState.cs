@@ -1,6 +1,9 @@
 using System;
 using System.Linq;
-using TowerFluffy.Domain.Simulation;
+using TowerFluffy.Domain.Shared;
+using TowerFluffy.Domain.Combat;
+using TowerFluffy.Domain.Environment;
+using TowerFluffy.Domain.Engine;
 
 namespace TowerFluffy.Domain.Match;
 
