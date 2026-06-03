@@ -102,8 +102,9 @@
                                 <Grid RowDefinitions="Auto, *">
                                 <Border Grid.Row="0" BorderBrush="#20FFFFFF" BorderThickness="0,0,0,1" Padding="25,15" Background="#0AFFFFFF" CornerRadius="12,12,0,0">
                                     <StackPanel Spacing="5" HorizontalAlignment="Center">
-                                        <TextBlock Text="RÉGLAGES D'ÉQUILIBRAGE (SOLO)" FontSize="16" FontWeight="Bold" LetterSpacing="2" Foreground="White" HorizontalAlignment="Center" />
-                                        <TextBlock Text="Configurez les statistiques des troupes et des défenses locales" FontSize="11" Foreground="#80FFFFFF" HorizontalAlignment="Center" />
+                                        <TextBlock Text="RÉGLAGES D'ÉQUILIBRAGE" FontSize="16" FontWeight="Bold" LetterSpacing="2" Foreground="White" HorizontalAlignment="Center" />
+                                        <TextBlock Text="Configurez les statistiques des troupes et des défenses locales" FontSize="11" Foreground="#80FFFFFF" HorizontalAlignment="Center" IsVisible="{Binding IsSoloMode}" />
+                                        <TextBlock Text="*(En multijoueur, seuls les réglages du créateur du salon sont appliqués)*" FontSize="11" Foreground="#FFCC00" FontWeight="SemiBold" HorizontalAlignment="Center" IsVisible="{Binding !IsSoloMode}" />
                                     </StackPanel>
                                 </Border>
 
@@ -261,7 +262,7 @@
                                     </ComboBox>
                                 </StackPanel>
 
-                                <Border Background="#10FFFFFF" CornerRadius="8" Padding="20,15" IsVisible="{Binding IsSoloMode}">
+                                <Border Background="#10FFFFFF" CornerRadius="8" Padding="20,15">
                                     <Grid ColumnDefinitions="*, Auto">
                                         <StackPanel VerticalAlignment="Center" Spacing="4">
                                             <TextBlock Text="Réglages d'équilibrage" FontWeight="Bold" FontSize="14" Foreground="White" />
@@ -325,8 +326,14 @@
                         </Border>
                     </StackPanel>
                     
+                    <!-- BOUTON AJUSTER L'ÉQUILIBRAGE (SALLE D'ATTENTE) -->
+                    <Button Command="{Binding ToggleBalancingMenu}" 
+                            Classes="Flat" Height="40" Padding="25,0" HorizontalAlignment="Center" Margin="0,-40,0,0" Cursor="Hand" Background="#1AFFFFFF">
+                        <TextBlock Text="{Binding BalancingMenuButtonText}" FontSize="13" FontWeight="Bold" LetterSpacing="2" Foreground="White" />
+                    </Button>
+                    
                     <!-- CARTES DE JOUEURS -->
-                    <Grid ColumnDefinitions="*, *" ColumnSpacing="60" Margin="40,0">
+                    <Grid ColumnDefinitions="*, *" ColumnSpacing="60" Margin="40,0" IsVisible="{Binding !IsBalancingMenuVisible}">
                         
                         <!-- JOUEUR -->
                         <suki:GlassCard Grid.Column="0" CornerRadius="20" Padding="0" BorderBrush="{Binding IsReady, Converter={StaticResource ReadyToColorConverter}}" BorderThickness="3">
@@ -373,11 +380,153 @@
                         </suki:GlassCard>
 
                     </Grid>
+
+                    <!-- MENU D'ÉQUILIBRAGE (SALLE D'ATTENTE) -->
+                    <suki:GlassCard CornerRadius="12" Padding="0" IsVisible="{Binding IsBalancingMenuVisible}" Height="400" Margin="40,0">
+                        <Grid RowDefinitions="Auto, *">
+                            <Border Grid.Row="0" BorderBrush="#20FFFFFF" BorderThickness="0,0,0,1" Padding="25,12" Background="#0AFFFFFF" CornerRadius="12,12,0,0">
+                                <StackPanel Spacing="3" HorizontalAlignment="Center">
+                                    <TextBlock Text="RÉGLAGES D'ÉQUILIBRAGE DE LA PARTIE" FontSize="15" FontWeight="Bold" LetterSpacing="2" Foreground="White" HorizontalAlignment="Center" />
+                                    <TextBlock Text="*(En multijoueur, seuls les réglages du créateur du salon sont appliqués)*" FontSize="10" Foreground="#FFCC00" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+
+                            <ScrollViewer Grid.Row="1">
+                                <Grid RowDefinitions="*, Auto" Margin="30,20">
+                                    <!-- CONTENU DES DEUX COLONNES (TOURS & UNITÉS) -->
+                                    <Grid Grid.Row="0" ColumnDefinitions="*, *" ColumnSpacing="40">
+                                        <!-- COLONNE GAUCHE : TOURS -->
+                                        <StackPanel Spacing="15">
+                                            <TextBlock Text="🎯 STATS DES TOURS" FontSize="14" FontWeight="Bold" Foreground="White" Margin="0,0,0,5" />
+                                            
+                                            <StackPanel Spacing="8">
+                                                <TextBlock Text="Sélectionner une tour :" FontSize="11" Foreground="#A0FFFFFF" FontWeight="Bold" />
+                                                <ComboBox SelectedIndex="{Binding SelectedBalancingTowerIndex}" HorizontalAlignment="Stretch" Height="40" Background="#0D0F14">
+                                                    <ComboBoxItem>Mitrailleuse Standard</ComboBoxItem>
+                                                    <ComboBoxItem>Lance-flammes tactique</ComboBoxItem>
+                                                    <ComboBoxItem>Sniper lourd</ComboBoxItem>
+                                                    <ComboBoxItem>Canon de défense</ComboBoxItem>
+                                                    <ComboBoxItem>Laser continu</ComboBoxItem>
+                                                </ComboBox>
+                                            </StackPanel>
+
+                                            <StackPanel Spacing="15">
+                                                <!-- Coût -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Coût de construction :" FontSize="12" Foreground="White" />
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                                            <TextBlock Text="{Binding BalancingTowerCost}" FontSize="12" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" />
+                                                            <TextBlock Text="CR" FontSize="10" Foreground="#80FFFFFF" VerticalAlignment="Bottom" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <Slider Minimum="10" Maximum="800" Value="{Binding BalancingTowerCost}" SmallChange="5" LargeChange="50" TickFrequency="5" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+
+                                                <!-- Dégâts -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Dégâts par tir :" FontSize="12" Foreground="White" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding BalancingTowerDamage}" FontSize="12" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" />
+                                                    </Grid>
+                                                    <Slider Minimum="1" Maximum="200" Value="{Binding BalancingTowerDamage}" SmallChange="1" LargeChange="10" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+
+                                                <!-- Portée -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Portée d'attaque (pixels) :" FontSize="12" Foreground="White" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding BalancingTowerRange}" FontSize="12" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" />
+                                                    </Grid>
+                                                    <Slider Minimum="50" Maximum="600" Value="{Binding BalancingTowerRange}" SmallChange="10" LargeChange="50" TickFrequency="10" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+
+                                                <!-- Cooldown -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Vitesse (Délai en ticks entre tirs) :" FontSize="12" Foreground="White" />
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                                            <TextBlock Text="{Binding BalancingTowerCooldown}" FontSize="12" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" />
+                                                            <TextBlock Text="ticks" FontSize="10" Foreground="#80FFFFFF" VerticalAlignment="Bottom" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <Slider Minimum="2" Maximum="150" Value="{Binding BalancingTowerCooldown}" SmallChange="1" LargeChange="10" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!-- COLONNE DROITE : UNITÉS -->
+                                        <StackPanel Grid.Column="1" Spacing="15">
+                                            <TextBlock Text="👾 STATS DES UNITÉS" FontSize="14" FontWeight="Bold" Foreground="White" Margin="0,0,0,5" />
+                                            
+                                            <StackPanel Spacing="8">
+                                                <TextBlock Text="Sélectionner une unité :" FontSize="11" Foreground="#A0FFFFFF" FontWeight="Bold" />
+                                                <ComboBox SelectedIndex="{Binding SelectedBalancingUnitIndex}" HorizontalAlignment="Stretch" Height="40" Background="#0D0F14">
+                                                    <ComboBoxItem>Soldat d'assaut</ComboBoxItem>
+                                                    <ComboBoxItem>Brute lourde</ComboBoxItem>
+                                                    <ComboBoxItem>Éclaireur rapide</ComboBoxItem>
+                                                    <ComboBoxItem>Tireur d'élite</ComboBoxItem>
+                                                    <ComboBoxItem>Tank blindé</ComboBoxItem>
+                                                </ComboBox>
+                                            </StackPanel>
+
+                                            <StackPanel Spacing="15">
+                                                <!-- Coût -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Coût d'invocation :" FontSize="12" Foreground="White" />
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                                            <TextBlock Text="{Binding BalancingUnitCost}" FontSize="12" Foreground="#EF4444" FontWeight="Bold" />
+                                                            <TextBlock Text="CR" FontSize="10" Foreground="#80FFFFFF" VerticalAlignment="Bottom" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <Slider Minimum="5" Maximum="500" Value="{Binding BalancingUnitCost}" SmallChange="5" LargeChange="20" TickFrequency="5" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+
+                                                <!-- PV -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Points de vie maximum :" FontSize="12" Foreground="White" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding BalancingUnitHealth}" FontSize="12" Foreground="#EF4444" FontWeight="Bold" />
+                                                    </Grid>
+                                                    <Slider Minimum="5" Maximum="1000" Value="{Binding BalancingUnitHealth}" SmallChange="5" LargeChange="50" TickFrequency="5" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+
+                                                <!-- Vitesse -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Vitesse de déplacement (pixels/tick) :" FontSize="12" Foreground="White" />
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                                            <TextBlock Text="{Binding BalancingUnitSpeed}" FontSize="12" Foreground="#EF4444" FontWeight="Bold" />
+                                                            <TextBlock Text="px/tick" FontSize="10" Foreground="#80FFFFFF" VerticalAlignment="Bottom" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <Slider Minimum="1" Maximum="10" Value="{Binding BalancingUnitSpeed}" SmallChange="1" LargeChange="2" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+
+                                                <!-- Bounty -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Récompense de mort (Butin) :" FontSize="12" Foreground="White" />
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                                            <TextBlock Text="{Binding BalancingUnitBounty}" FontSize="12" Foreground="#EF4444" FontWeight="Bold" />
+                                                            <TextBlock Text="CR" FontSize="10" Foreground="#80FFFFFF" VerticalAlignment="Bottom" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <Slider Minimum="1" Maximum="200" Value="{Binding BalancingUnitBounty}" SmallChange="1" LargeChange="10" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Grid>
+                                </Grid>
+                            </ScrollViewer>
+                        </Grid>
+                    </suki:GlassCard>
                     
                     <!-- BOUTON D'ANNULATION -->
                     <Button Command="{Binding ReplayCommand}" 
                             Classes="Basic" Foreground="#FF3B30"
-                            HorizontalAlignment="Center" Margin="0,30,0,0" Cursor="Hand">
+                            HorizontalAlignment="Center" Margin="0,20,0,0" Cursor="Hand">
                         <TextBlock Text="ANNULER LA MISSION" FontSize="16" FontWeight="Black" LetterSpacing="3" />
                     </Button>
                     

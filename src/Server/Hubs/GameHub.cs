@@ -113,7 +113,15 @@ public class GameHub : Hub<IGameClient>, IGameHub
 
         if (isReady && !string.IsNullOrEmpty(balancingSettingsJson))
         {
-            _gameBalancingSettings[gameId] = balancingSettingsJson;
+            if (_games.TryGetValue(gameId, out var players))
+            {
+                string? firstPlayer;
+                lock(players) firstPlayer = players.FirstOrDefault();
+                if (firstPlayer == Context.ConnectionId)
+                {
+                    _gameBalancingSettings[gameId] = balancingSettingsJson;
+                }
+            }
         }
 
         // Notifier uniquement les autres joueurs de la MEME salle

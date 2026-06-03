@@ -230,7 +230,18 @@ public sealed class MainWindowViewModel : ViewModelBase
     public bool IsBalancingMenuVisible
     {
         get => _isBalancingMenuVisible;
-        set => this.RaiseAndSetIfChanged(ref _isBalancingMenuVisible, value);
+        set 
+        {
+            this.RaiseAndSetIfChanged(ref _isBalancingMenuVisible, value);
+            this.RaisePropertyChanged(nameof(BalancingMenuButtonText));
+        }
+    }
+
+    public string BalancingMenuButtonText => IsBalancingMenuVisible ? "RETOUR À LA PRÉPARATION" : "AJUSTER L'ÉQUILIBRAGE";
+
+    public void ToggleBalancingMenu()
+    {
+        IsBalancingMenuVisible = !IsBalancingMenuVisible;
     }
 
     public System.Collections.ObjectModel.ObservableCollection<GameInfoDto> AvailableGames => _availableGames;
@@ -277,10 +288,6 @@ public sealed class MainWindowViewModel : ViewModelBase
             this.RaisePropertyChanged(nameof(IsSoloMode));
             this.RaisePropertyChanged(nameof(IsDefenderShopVisible));
             this.RaisePropertyChanged(nameof(IsAttackerShopVisible));
-            if (value != PlayerRole.Both)
-            {
-                IsBalancingMenuVisible = false;
-            }
         }
     }
 
@@ -716,6 +723,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         IsInGameRoom = false;
         IsReady = false;
         IsOpponentReady = false;
+        IsBalancingMenuVisible = false;
         _gameStartTime = null;
         _totalTicksProcessed = 0;
 
