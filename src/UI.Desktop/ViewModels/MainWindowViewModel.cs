@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Collections.Generic;
 
 using RxUnit = System.Reactive.Unit;
 
@@ -60,7 +61,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         _networkCoordinator.RoleReceived += role => Avalonia.Threading.Dispatcher.UIThread.Post(() => SelectedRole = role);
         _networkCoordinator.OpponentReadyChanged += ready => Avalonia.Threading.Dispatcher.UIThread.Post(() => IsOpponentReady = ready);
         _networkCoordinator.GameStarted += (seed, startTime) => Avalonia.Threading.Dispatcher.UIThread.Post(() => {
-            _session = GameSession.CreateMvp(seed);
+            _session = CreateSession(seed);
             _gameStartTime = new DateTime(startTime, DateTimeKind.Utc);
             _totalTicksProcessed = 0;
             Snapshot = _session.State;
@@ -103,12 +104,128 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         // Démarrer la musique en boucle
         SoundEffects.PlayTheme();
+
+        InitializeBalancing();
     }
 
     public string ServerUrl
     {
         get => _serverUrl;
         set => this.RaiseAndSetIfChanged(ref _serverUrl, value);
+    }
+
+    // --- BALANCING OPTIONS ---
+    private int _selectedBalancingTowerIndex = 0;
+    public int SelectedBalancingTowerIndex
+    {
+        get => _selectedBalancingTowerIndex;
+        set {
+            this.RaiseAndSetIfChanged(ref _selectedBalancingTowerIndex, value);
+            _isUpdatingFields = true;
+            UpdateTowerBalancingFields();
+            _isUpdatingFields = false;
+        }
+    }
+
+    private int _selectedBalancingUnitIndex = 0;
+    public int SelectedBalancingUnitIndex
+    {
+        get => _selectedBalancingUnitIndex;
+        set {
+            this.RaiseAndSetIfChanged(ref _selectedBalancingUnitIndex, value);
+            _isUpdatingFields = true;
+            UpdateUnitBalancingFields();
+            _isUpdatingFields = false;
+        }
+    }
+
+    private bool _isUpdatingFields = false;
+
+    private int _balancingTowerCost;
+    public int BalancingTowerCost
+    {
+        get => _balancingTowerCost;
+        set {
+            this.RaiseAndSetIfChanged(ref _balancingTowerCost, value);
+            if (!_isUpdatingFields) SaveTowerBalancingChanges();
+        }
+    }
+
+    private int _balancingTowerDamage;
+    public int BalancingTowerDamage
+    {
+        get => _balancingTowerDamage;
+        set {
+            this.RaiseAndSetIfChanged(ref _balancingTowerDamage, value);
+            if (!_isUpdatingFields) SaveTowerBalancingChanges();
+        }
+    }
+
+    private int _balancingTowerRange;
+    public int BalancingTowerRange
+    {
+        get => _balancingTowerRange;
+        set {
+            this.RaiseAndSetIfChanged(ref _balancingTowerRange, value);
+            if (!_isUpdatingFields) SaveTowerBalancingChanges();
+        }
+    }
+
+    private int _balancingTowerCooldown;
+    public int BalancingTowerCooldown
+    {
+        get => _balancingTowerCooldown;
+        set {
+            this.RaiseAndSetIfChanged(ref _balancingTowerCooldown, value);
+            if (!_isUpdatingFields) SaveTowerBalancingChanges();
+        }
+    }
+
+    private int _balancingUnitCost;
+    public int BalancingUnitCost
+    {
+        get => _balancingUnitCost;
+        set {
+            this.RaiseAndSetIfChanged(ref _balancingUnitCost, value);
+            if (!_isUpdatingFields) SaveUnitBalancingChanges();
+        }
+    }
+
+    private int _balancingUnitHealth;
+    public int BalancingUnitHealth
+    {
+        get => _balancingUnitHealth;
+        set {
+            this.RaiseAndSetIfChanged(ref _balancingUnitHealth, value);
+            if (!_isUpdatingFields) SaveUnitBalancingChanges();
+        }
+    }
+
+    private int _balancingUnitSpeed;
+    public int BalancingUnitSpeed
+    {
+        get => _balancingUnitSpeed;
+        set {
+            this.RaiseAndSetIfChanged(ref _balancingUnitSpeed, value);
+            if (!_isUpdatingFields) SaveUnitBalancingChanges();
+        }
+    }
+
+    private int _balancingUnitBounty;
+    public int BalancingUnitBounty
+    {
+        get => _balancingUnitBounty;
+        set {
+            this.RaiseAndSetIfChanged(ref _balancingUnitBounty, value);
+            if (!_isUpdatingFields) SaveUnitBalancingChanges();
+        }
+    }
+
+    private bool _isBalancingMenuVisible = false;
+    public bool IsBalancingMenuVisible
+    {
+        get => _isBalancingMenuVisible;
+        set => this.RaiseAndSetIfChanged(ref _isBalancingMenuVisible, value);
     }
 
     public System.Collections.ObjectModel.ObservableCollection<GameInfoDto> AvailableGames => _availableGames;
@@ -155,6 +272,10 @@ public sealed class MainWindowViewModel : ViewModelBase
             this.RaisePropertyChanged(nameof(IsSoloMode));
             this.RaisePropertyChanged(nameof(IsDefenderShopVisible));
             this.RaisePropertyChanged(nameof(IsAttackerShopVisible));
+            if (value != PlayerRole.Both)
+            {
+                IsBalancingMenuVisible = false;
+            }
         }
     }
 
@@ -499,7 +620,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private void ExecuteStartSolo()
     {
-        _session = GameSession.CreateMvp();
+        _session = CreateSession();
         _gameStartTime = DateTime.UtcNow;
         _totalTicksProcessed = 0;
         Snapshot = _session.State;
@@ -520,7 +641,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         _gameStartTime = null;
         _totalTicksProcessed = 0;
 
-        _session = GameSession.CreateMvp();
+        _session = CreateSession();
         Snapshot = _session.State;
     }
 
@@ -612,6 +733,150 @@ public sealed class MainWindowViewModel : ViewModelBase
             // Fallback
         }
         return "localhost";
+    }
+
+    // --- BALANCING IMPLEMENTATION ---
+    private List<TowerDefinition> _customTowers = new();
+    private List<UnitDefinition> _customUnits = new();
+    private GameConfig _customConfig = null!;
+
+    public GameConfig ActiveConfig => _customConfig;
+
+    private void InitializeBalancing()
+    {
+        var defaults = GameConfig.CreateMvpDefaults();
+        
+        // Recommended balanced defaults:
+        _customTowers = defaults.Towers.Select(t => {
+            if (t.Type == TowerType.Sniper)
+            {
+                // Sniper balance: make it 200 gold and slightly slower (cooldown 75 ticks instead of 60)
+                return new TowerDefinition(t.Type, new TowerStats(new Gold(200), t.Stats.DamagePerShot, t.Stats.Range, 75), t.Health);
+            }
+            return t;
+        }).ToList();
+
+        _customUnits = defaults.Units.Select(u => {
+            // Adjust unit bounties to avoid feeding the defender's economy:
+            int newBounty = u.Type switch
+            {
+                UnitType.Soldat => 5,
+                UnitType.Brute => 20,
+                UnitType.Rapide => 8,
+                UnitType.TireurElite => 15,
+                UnitType.Tank => 40,
+                _ => u.LootGold.Value
+            };
+            return new UnitDefinition(
+                u.Type,
+                u.Cost,
+                u.Health,
+                u.SpeedPerTick,
+                u.DamageToBase,
+                u.DamageToTower,
+                u.AttackRange,
+                u.AttackCooldownTicksBetweenAttacks,
+                new Gold(newBounty)
+            );
+        }).ToList();
+
+        RecreateConfig();
+        
+        _isUpdatingFields = true;
+        UpdateTowerBalancingFields();
+        UpdateUnitBalancingFields();
+        _isUpdatingFields = false;
+    }
+
+    private void RecreateConfig()
+    {
+        var defaults = GameConfig.CreateMvpDefaults();
+        _customConfig = new GameConfig(
+            defaults.TotalWaves,
+            defaults.PreparationTicks,
+            defaults.WaveSendWindowTicks,
+            defaults.BaseWaveBudget,
+            defaults.WaveBudgetIncrement,
+            defaults.BudgetBonusPerTowerDestroyed,
+            defaults.StartingGold,
+            defaults.StartingBaseHealth,
+            defaults.GoldPerBaseDamageTaken,
+            _customTowers,
+            _customUnits
+        );
+    }
+
+    private void UpdateTowerBalancingFields()
+    {
+        var type = (TowerType)SelectedBalancingTowerIndex;
+        var idx = _customTowers.FindIndex(x => x.Type == type);
+        if (idx != -1)
+        {
+            var t = _customTowers[idx];
+            BalancingTowerCost = t.Stats.Cost.Value;
+            BalancingTowerDamage = t.Stats.DamagePerShot.Value;
+            BalancingTowerRange = t.Stats.Range;
+            BalancingTowerCooldown = t.Stats.CooldownTicksBetweenShots;
+        }
+    }
+
+    private void UpdateUnitBalancingFields()
+    {
+        var type = (UnitType)SelectedBalancingUnitIndex;
+        var idx = _customUnits.FindIndex(x => x.Type == type);
+        if (idx != -1)
+        {
+            var u = _customUnits[idx];
+            BalancingUnitCost = u.Cost.Value;
+            BalancingUnitHealth = u.Health.Value;
+            BalancingUnitSpeed = u.SpeedPerTick;
+            BalancingUnitBounty = u.LootGold.Value;
+        }
+    }
+
+    private void SaveTowerBalancingChanges()
+    {
+        var type = (TowerType)SelectedBalancingTowerIndex;
+        var idx = _customTowers.FindIndex(x => x.Type == type);
+        if (idx != -1)
+        {
+            var existing = _customTowers[idx];
+            _customTowers[idx] = new TowerDefinition(
+                type,
+                new TowerStats(new Gold(BalancingTowerCost), new Damage(BalancingTowerDamage), BalancingTowerRange, BalancingTowerCooldown),
+                existing.Health
+            );
+            RecreateConfig();
+        }
+    }
+
+    private void SaveUnitBalancingChanges()
+    {
+        var type = (UnitType)SelectedBalancingUnitIndex;
+        var idx = _customUnits.FindIndex(x => x.Type == type);
+        if (idx != -1)
+        {
+            var existing = _customUnits[idx];
+            _customUnits[idx] = new UnitDefinition(
+                type,
+                new Budget(BalancingUnitCost),
+                new Health(BalancingUnitHealth),
+                BalancingUnitSpeed,
+                existing.DamageToBase,
+                existing.DamageToTower,
+                existing.AttackRange,
+                existing.AttackCooldownTicksBetweenAttacks,
+                new Gold(BalancingUnitBounty)
+            );
+            RecreateConfig();
+        }
+    }
+
+    private GameSession CreateSession(int? seed = null)
+    {
+        var finalSeed = seed ?? new Random().Next();
+        var map = DefaultMapFactory.Create(1, finalSeed);
+        return new GameSession(ActiveConfig, map, finalSeed);
     }
 }
 

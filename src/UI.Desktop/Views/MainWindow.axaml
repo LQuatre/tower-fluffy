@@ -43,56 +43,208 @@
                 <!-- GRILLE DE CONTENU (Occupe toute la largeur) -->
                 <Grid Grid.Row="1" ColumnDefinitions="2*, 450" ColumnSpacing="60">
                     
-                    <!-- GAUCHE : LISTE DES SALLES (S'étend) -->
-                    <suki:GlassCard CornerRadius="12" Padding="0">
-                        <Grid RowDefinitions="Auto, *">
-                            <Border Grid.Row="0" BorderBrush="#20FFFFFF" BorderThickness="0,0,0,1" Padding="25,15" Background="#0AFFFFFF" CornerRadius="12,12,0,0">
-                                <StackPanel Spacing="5" HorizontalAlignment="Center">
-                                    <TextBlock Text="PARTIES EN LIGNE" FontSize="16" FontWeight="Bold" LetterSpacing="2" Foreground="White" HorizontalAlignment="Center" />
-                                    <TextBlock Text="{Binding ServerUrl, StringFormat='{}Serveur : {0}'}" FontSize="11" Foreground="#80FFFFFF" HorizontalAlignment="Center" IsVisible="{Binding IsConnected}" />
-                                </StackPanel>
-                            </Border>
-                            
-                            <Grid Grid.Row="1">
-                                <ListBox ItemsSource="{Binding AvailableGames}" Background="Transparent" BorderThickness="0">
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="25,20">
-                                                <Grid ColumnDefinitions="*, Auto">
-                                                    <StackPanel Spacing="5">
-                                                        <TextBlock Text="{Binding GameId}" FontWeight="Bold" FontSize="18" />
-                                                        <StackPanel Orientation="Horizontal" Spacing="20">
-                                                            <TextBlock Text="{Binding PlayerCount, StringFormat='{}{0} / 2 joueurs'}" FontSize="13" Foreground="White" />
-                                                            <TextBlock Text="• Disponible" Foreground="#10B981" FontSize="13" IsVisible="{Binding !IsStarted}" />
-                                                        </StackPanel>
-                                                    </StackPanel>
-                                                    <Button Grid.Column="1" Content="REJOINDRE" Classes="Flat" Height="45" Padding="30,0"
-                                                            Command="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext).JoinSpecificGameCommand}" 
-                                                            CommandParameter="{Binding GameId}" />
-                                                </Grid>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
-                                
-                                <StackPanel IsVisible="{Binding !IsConnected}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="25" Width="400">
-                                    <TextBlock Text="CONNEXION RÉSEAU TACTIQUE" FontWeight="Bold" FontSize="15" Foreground="White" HorizontalAlignment="Center" LetterSpacing="2" />
-                                    
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Text="Adresse du serveur :" FontSize="11" Foreground="#A0FFFFFF" FontWeight="Bold" />
-                                        <TextBox Text="{Binding ServerUrl}" Watermark="http://192.168.X.X:5128/gameHub" Height="45" Background="#0D0F14" Foreground="White" />
+                    <!-- GAUCHE : LISTE DES SALLES OU ÉQUILIBRAGE (S'étend) -->
+                    <Grid Grid.Column="0">
+                        <!-- PANEL 1 : PARTIES EN LIGNE -->
+                        <suki:GlassCard CornerRadius="12" Padding="0" IsVisible="{Binding !IsBalancingMenuVisible}">
+                            <Grid RowDefinitions="Auto, *">
+                                <Border Grid.Row="0" BorderBrush="#20FFFFFF" BorderThickness="0,0,0,1" Padding="25,15" Background="#0AFFFFFF" CornerRadius="12,12,0,0">
+                                    <StackPanel Spacing="5" HorizontalAlignment="Center">
+                                        <TextBlock Text="PARTIES EN LIGNE" FontSize="16" FontWeight="Bold" LetterSpacing="2" Foreground="White" HorizontalAlignment="Center" />
+                                        <TextBlock Text="{Binding ServerUrl, StringFormat='{}Serveur : {0}'}" FontSize="11" Foreground="#80FFFFFF" HorizontalAlignment="Center" IsVisible="{Binding IsConnected}" />
                                     </StackPanel>
+                                </Border>
+                                
+                                <Grid Grid.Row="1">
+                                    <ListBox ItemsSource="{Binding AvailableGames}" Background="Transparent" BorderThickness="0">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="25,20">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <StackPanel Spacing="5">
+                                                            <TextBlock Text="{Binding GameId}" FontWeight="Bold" FontSize="18" />
+                                                            <StackPanel Orientation="Horizontal" Spacing="20">
+                                                                <TextBlock Text="{Binding PlayerCount, StringFormat='{}{0} / 2 joueurs'}" FontSize="13" Foreground="White" />
+                                                                <TextBlock Text="• Disponible" Foreground="#10B981" FontSize="13" IsVisible="{Binding !IsStarted}" />
+                                                            </StackPanel>
+                                                        </StackPanel>
+                                                        <Button Grid.Column="1" Content="REJOINDRE" Classes="Flat" Height="45" Padding="30,0"
+                                                                Command="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext).JoinSpecificGameCommand}" 
+                                                                CommandParameter="{Binding GameId}" />
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
                                     
-                                    <Button Command="{Binding ConnectCommand}" Content="SE CONNECTER" Classes="Flat" Height="45" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" IsEnabled="{Binding !IsConnecting}" />
-                                    
-                                    <ProgressBar IsVisible="{Binding IsConnecting}" IsIndeterminate="True" Height="2" Foreground="{StaticResource AccentBrush}" Margin="0,5,0,0" />
-                                    
-                                    <TextBlock IsVisible="{Binding LastError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" 
-                                               Text="{Binding LastError}" Foreground="#FF3B30" FontSize="12" TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center" />
-                                </StackPanel>
+                                    <StackPanel IsVisible="{Binding !IsConnected}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="25" Width="400">
+                                        <TextBlock Text="CONNEXION RÉSEAU TACTIQUE" FontWeight="Bold" FontSize="15" Foreground="White" HorizontalAlignment="Center" LetterSpacing="2" />
+                                        
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Text="Adresse du serveur :" FontSize="11" Foreground="#A0FFFFFF" FontWeight="Bold" />
+                                            <TextBox Text="{Binding ServerUrl}" Watermark="http://192.168.X.X:5128/gameHub" Height="45" Background="#0D0F14" Foreground="White" />
+                                        </StackPanel>
+                                        
+                                        <Button Command="{Binding ConnectCommand}" Content="SE CONNECTER" Classes="Flat" Height="45" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" IsEnabled="{Binding !IsConnecting}" />
+                                        
+                                        <ProgressBar IsVisible="{Binding IsConnecting}" IsIndeterminate="True" Height="2" Foreground="{StaticResource AccentBrush}" Margin="0,5,0,0" />
+                                        
+                                        <TextBlock IsVisible="{Binding LastError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" 
+                                                   Text="{Binding LastError}" Foreground="#FF3B30" FontSize="12" TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
                             </Grid>
-                        </Grid>
-                    </suki:GlassCard>
+                        </suki:GlassCard>
+
+                        <!-- PANEL 2 : MENU D'ÉQUILIBRAGE TACTIQUE -->
+                        <suki:GlassCard CornerRadius="12" Padding="0" IsVisible="{Binding IsBalancingMenuVisible}">
+                            <Grid RowDefinitions="Auto, *">
+                                <Border Grid.Row="0" BorderBrush="#20FFFFFF" BorderThickness="0,0,0,1" Padding="25,15" Background="#0AFFFFFF" CornerRadius="12,12,0,0">
+                                    <StackPanel Spacing="5" HorizontalAlignment="Center">
+                                        <TextBlock Text="RÉGLAGES D'ÉQUILIBRAGE (SOLO)" FontSize="16" FontWeight="Bold" LetterSpacing="2" Foreground="White" HorizontalAlignment="Center" />
+                                        <TextBlock Text="Configurez les statistiques des troupes et des défenses locales" FontSize="11" Foreground="#80FFFFFF" HorizontalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+
+                                <Grid Grid.Row="1" RowDefinitions="*, Auto" Margin="30,25">
+                                    <!-- CONTENU DES DEUX COLONNES (TOURS & UNITÉS) -->
+                                    <Grid Grid.Row="0" ColumnDefinitions="*, *" ColumnSpacing="40">
+                                        <!-- COLONNE GAUCHE : TOURS -->
+                                        <StackPanel Spacing="15">
+                                            <TextBlock Text="🎯 STATS DES TOURS" FontSize="14" FontWeight="Bold" Foreground="White" Margin="0,0,0,5" />
+                                            
+                                            <StackPanel Spacing="8">
+                                                <TextBlock Text="Sélectionner une tour :" FontSize="11" Foreground="#A0FFFFFF" FontWeight="Bold" />
+                                                <ComboBox SelectedIndex="{Binding SelectedBalancingTowerIndex}" HorizontalAlignment="Stretch" Height="40" Background="#0D0F14">
+                                                    <ComboBoxItem>Mitrailleuse Standard</ComboBoxItem>
+                                                    <ComboBoxItem>Lance-flammes tactique</ComboBoxItem>
+                                                    <ComboBoxItem>Sniper lourd</ComboBoxItem>
+                                                    <ComboBoxItem>Canon de défense</ComboBoxItem>
+                                                    <ComboBoxItem>Laser continu</ComboBoxItem>
+                                                </ComboBox>
+                                            </StackPanel>
+
+                                            <StackPanel Spacing="15">
+                                                <!-- Coût -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Coût de construction :" FontSize="12" Foreground="White" />
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                                            <TextBlock Text="{Binding BalancingTowerCost}" FontSize="12" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" />
+                                                            <TextBlock Text="CR" FontSize="10" Foreground="#80FFFFFF" VerticalAlignment="Bottom" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <Slider Minimum="10" Maximum="800" Value="{Binding BalancingTowerCost}" SmallChange="5" LargeChange="50" TickFrequency="5" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+
+                                                <!-- Dégâts -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Dégâts par tir :" FontSize="12" Foreground="White" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding BalancingTowerDamage}" FontSize="12" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" />
+                                                    </Grid>
+                                                    <Slider Minimum="1" Maximum="200" Value="{Binding BalancingTowerDamage}" SmallChange="1" LargeChange="10" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+
+                                                <!-- Portée -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Portée d'attaque (pixels) :" FontSize="12" Foreground="White" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding BalancingTowerRange}" FontSize="12" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" />
+                                                    </Grid>
+                                                    <Slider Minimum="50" Maximum="600" Value="{Binding BalancingTowerRange}" SmallChange="10" LargeChange="50" TickFrequency="10" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+
+                                                <!-- Cooldown -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Vitesse (Délai en ticks entre tirs) :" FontSize="12" Foreground="White" />
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                                            <TextBlock Text="{Binding BalancingTowerCooldown}" FontSize="12" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" />
+                                                            <TextBlock Text="ticks" FontSize="10" Foreground="#80FFFFFF" VerticalAlignment="Bottom" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <Slider Minimum="2" Maximum="150" Value="{Binding BalancingTowerCooldown}" SmallChange="1" LargeChange="10" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!-- COLONNE DROITE : UNITÉS -->
+                                        <StackPanel Grid.Column="1" Spacing="15">
+                                            <TextBlock Text="👾 STATS DES UNITÉS" FontSize="14" FontWeight="Bold" Foreground="White" Margin="0,0,0,5" />
+                                            
+                                            <StackPanel Spacing="8">
+                                                <TextBlock Text="Sélectionner une unité :" FontSize="11" Foreground="#A0FFFFFF" FontWeight="Bold" />
+                                                <ComboBox SelectedIndex="{Binding SelectedBalancingUnitIndex}" HorizontalAlignment="Stretch" Height="40" Background="#0D0F14">
+                                                    <ComboBoxItem>Soldat d'assaut</ComboBoxItem>
+                                                    <ComboBoxItem>Brute lourde</ComboBoxItem>
+                                                    <ComboBoxItem>Éclaireur rapide</ComboBoxItem>
+                                                    <ComboBoxItem>Tireur d'élite</ComboBoxItem>
+                                                    <ComboBoxItem>Tank blindé</ComboBoxItem>
+                                                </ComboBox>
+                                            </StackPanel>
+
+                                            <StackPanel Spacing="15">
+                                                <!-- Coût -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Coût d'invocation :" FontSize="12" Foreground="White" />
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                                            <TextBlock Text="{Binding BalancingUnitCost}" FontSize="12" Foreground="#EF4444" FontWeight="Bold" />
+                                                            <TextBlock Text="CR" FontSize="10" Foreground="#80FFFFFF" VerticalAlignment="Bottom" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <Slider Minimum="5" Maximum="500" Value="{Binding BalancingUnitCost}" SmallChange="5" LargeChange="20" TickFrequency="5" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+
+                                                <!-- PV -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Points de vie maximum :" FontSize="12" Foreground="White" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding BalancingUnitHealth}" FontSize="12" Foreground="#EF4444" FontWeight="Bold" />
+                                                    </Grid>
+                                                    <Slider Minimum="5" Maximum="1000" Value="{Binding BalancingUnitHealth}" SmallChange="5" LargeChange="50" TickFrequency="5" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+
+                                                <!-- Vitesse -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Vitesse de déplacement (pixels/tick) :" FontSize="12" Foreground="White" />
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                                            <TextBlock Text="{Binding BalancingUnitSpeed}" FontSize="12" Foreground="#EF4444" FontWeight="Bold" />
+                                                            <TextBlock Text="px/tick" FontSize="10" Foreground="#80FFFFFF" VerticalAlignment="Bottom" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <Slider Minimum="1" Maximum="10" Value="{Binding BalancingUnitSpeed}" SmallChange="1" LargeChange="2" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+
+                                                <!-- Bounty -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Récompense de mort (Butin) :" FontSize="12" Foreground="White" />
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                                            <TextBlock Text="{Binding BalancingUnitBounty}" FontSize="12" Foreground="#EF4444" FontWeight="Bold" />
+                                                            <TextBlock Text="CR" FontSize="10" Foreground="#80FFFFFF" VerticalAlignment="Bottom" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <Slider Minimum="1" Maximum="200" Value="{Binding BalancingUnitBounty}" SmallChange="1" LargeChange="10" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- ZONE BASSE : PROPOSITIONS D'ÉQUILIBRAGE DE BASE -->
+                                    <Border Grid.Row="1" Background="#10FFFFFF" BorderBrush="#20FFFFFF" BorderThickness="1" CornerRadius="8" Padding="15" Margin="0,15,0,0">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="💡 Propositions d'équilibrage par défaut appliquées :" FontSize="12" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
+                                            <TextBlock Text="• Sniper nerf : Coût ajusté à 200 CR (au lieu de 150) et recharge à 75 ticks (au lieu de 60) pour limiter sa domination." FontSize="11" Foreground="#C0FFFFFF" TextWrapping="Wrap" />
+                                            <TextBlock Text="• Économie saine : Butins d'unités (Bounties) réduits à 30-40% de leur coût pour éviter d'inonder le défenseur de crédits et rendre le jeu stratégique." FontSize="11" Foreground="#C0FFFFFF" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </Grid>
+                        </suki:GlassCard>
+                    </Grid>
 
                     <!-- DROITE : OPTIONS (Largeur fixe de 450 pour rester propre) -->
                     <StackPanel Grid.Column="1" Spacing="40" VerticalAlignment="Top">
@@ -105,6 +257,11 @@
                                         <ComboBoxItem>Unité d'Assaut (Attaquant)</ComboBoxItem>
                                         <ComboBoxItem>Unité de Défense (Défenseur)</ComboBoxItem>
                                     </ComboBox>
+                                </StackPanel>
+
+                                <StackPanel Spacing="12" IsVisible="{Binding IsSoloMode}">
+                                    <TextBlock Text="Options Avancées" FontWeight="Bold" FontSize="14" Foreground="White" />
+                                    <ToggleSwitch IsChecked="{Binding IsBalancingMenuVisible}" Content="Réglages d'équilibrage" Foreground="White" OffContent="Masqués" OnContent="Affichés" />
                                 </StackPanel>
 
                                 <StackPanel Spacing="12" IsVisible="{Binding !IsSoloMode}">
