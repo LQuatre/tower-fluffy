@@ -12,6 +12,7 @@ public interface IGameClient
     Task ReceiveChat(string sender, string message);
     Task ReceivePlayerAction(PlayerAction action);
     Task ReceiveGameStarted(int seed, long startTimeUtc, string? balancingSettingsJson);
+    Task ReceiveBalancingSettingsUpdate(string balancingSettingsJson);
     Task ReceiveOpponentReady(bool isReady);
     Task ReceiveRoomClosed();
     Task ReceiveRole(int role);

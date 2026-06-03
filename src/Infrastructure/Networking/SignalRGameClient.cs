@@ -33,6 +33,7 @@ public class SignalRGameClient : IGameHub
         _connection.On<string, string>("ReceiveChat", (sender, message) => OnChatReceived?.Invoke(sender, message));
         _connection.On<PlayerAction>("ReceivePlayerAction", (action) => OnPlayerActionReceived?.Invoke(action));
         _connection.On<int, long, string?>("ReceiveGameStarted", (seed, startTime, settingsJson) => OnGameStarted?.Invoke(seed, startTime, settingsJson));
+        _connection.On<string>("ReceiveBalancingSettingsUpdate", (settingsJson) => OnBalancingSettingsUpdate?.Invoke(settingsJson));
         _connection.On<bool>("ReceiveOpponentReady", (isReady) => OnOpponentReady?.Invoke(isReady));
         _connection.On("ReceiveRoomClosed", () => OnRoomClosed?.Invoke());
         _connection.On<int>("ReceiveRole", (role) => OnRoleReceived?.Invoke(role));
@@ -44,6 +45,7 @@ public class SignalRGameClient : IGameHub
     public event Action<string, string>? OnChatReceived;
     public event Action<PlayerAction>? OnPlayerActionReceived;
     public event Action<int, long, string?>? OnGameStarted;
+    public event Action<string>? OnBalancingSettingsUpdate;
     public event Action<bool>? OnOpponentReady;
     public event Action? OnRoomClosed;
     public event Action<int>? OnRoleReceived;
@@ -77,6 +79,11 @@ public class SignalRGameClient : IGameHub
     public async Task SetReady(bool isReady, string? balancingSettingsJson)
     {
         await _connection.InvokeAsync(nameof(SetReady), isReady, balancingSettingsJson);
+    }
+
+    public async Task UpdateBalancingSettings(string balancingSettingsJson)
+    {
+        await _connection.InvokeAsync(nameof(UpdateBalancingSettings), balancingSettingsJson);
     }
 
     public async Task SendPlayerAction(PlayerAction action)

@@ -73,6 +73,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             _analyzer.Reset(_session.State.Config.StartingGold.Value);
         });
         _networkCoordinator.PlayerActionReceived += HandleNetworkAction;
+        _networkCoordinator.BalancingSettingsUpdated += json => Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplyServerBalancingSettings(json));
         _networkCoordinator.ErrorOccurred += err => Avalonia.Threading.Dispatcher.UIThread.Post(() => LastError = string.IsNullOrEmpty(err) ? null : err);
         _networkCoordinator.RoomClosed += () => {
             Avalonia.Threading.Dispatcher.UIThread.Post(() => {
@@ -1081,6 +1082,11 @@ public sealed class MainWindowViewModel : ViewModelBase
             var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
             var json = System.Text.Json.JsonSerializer.Serialize(data, options);
             System.IO.File.WriteAllText(SettingsFilePath, json);
+
+            if (IsConnected && IsInGameRoom && !IsGameStarted && !_isUpdatingFields)
+            {
+                _ = _networkCoordinator.SendBalancingSettingsUpdateAsync(json);
+            }
         }
         catch (Exception ex)
         {

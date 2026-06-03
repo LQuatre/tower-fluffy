@@ -17,6 +17,7 @@ public sealed class GameNetworkCoordinator : IDisposable
     public event Action<PlayerRole>? RoleReceived;
     public event Action<bool>? OpponentReadyChanged;
     public event Action<int, long, string?>? GameStarted;
+    public event Action<string>? BalancingSettingsUpdated;
     public event Action<PlayerAction>? PlayerActionReceived;
     public event Action? RoomClosed;
     public event Action<string>? ErrorOccurred;
@@ -34,6 +35,7 @@ public sealed class GameNetworkCoordinator : IDisposable
             var client = new SignalRGameClient(serverUrl.Trim());
             client.OnPlayerActionReceived += action => PlayerActionReceived?.Invoke(action);
             client.OnGameStarted += (seed, startTime, settingsJson) => GameStarted?.Invoke(seed, startTime, settingsJson);
+            client.OnBalancingSettingsUpdate += json => BalancingSettingsUpdated?.Invoke(json);
             client.OnOpponentReady += ready => OpponentReadyChanged?.Invoke(ready);
             client.OnGameListReceived += games => GameListReceived?.Invoke(games);
             client.OnRoleReceived += role => RoleReceived?.Invoke((PlayerRole)role);
@@ -77,6 +79,14 @@ public sealed class GameNetworkCoordinator : IDisposable
         if (_networkClient != null)
         {
             await _networkClient.SetReady(ready, balancingSettingsJson);
+        }
+    }
+
+    public async Task SendBalancingSettingsUpdateAsync(string balancingSettingsJson)
+    {
+        if (_networkClient != null)
+        {
+            await _networkClient.UpdateBalancingSettings(balancingSettingsJson);
         }
     }
 

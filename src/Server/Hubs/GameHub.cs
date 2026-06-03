@@ -149,6 +149,23 @@ public class GameHub : Hub<IGameClient>, IGameHub
         }
     }
 
+    public async Task UpdateBalancingSettings(string balancingSettingsJson)
+    {
+        if (!_playerToGame.TryGetValue(Context.ConnectionId, out var gameId)) return;
+
+        if (_games.TryGetValue(gameId, out var players))
+        {
+            string? firstPlayer;
+            lock(players) firstPlayer = players.FirstOrDefault();
+            if (firstPlayer == Context.ConnectionId)
+            {
+                _gameBalancingSettings[gameId] = balancingSettingsJson;
+            }
+        }
+
+        await Clients.GroupExcept(gameId, Context.ConnectionId).ReceiveBalancingSettingsUpdate(balancingSettingsJson);
+    }
+
     public async Task SendPlayerAction(PlayerAction action)
     {
         if (_playerToGame.TryGetValue(Context.ConnectionId, out var gameId))
