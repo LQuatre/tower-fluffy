@@ -18,6 +18,8 @@ public class GameHub : Hub<IGameClient>, IGameHub
     private static readonly ConcurrentDictionary<string, string> _playerToGame = new();
     // Mapping: ConnectionId -> Role (1 = Attacker, 2 = Defender)
     private static readonly ConcurrentDictionary<string, int> _playerRoles = new();
+    // Mapping: GameId -> BalancingSettingsJson
+    private static readonly ConcurrentDictionary<string, string?> _gameBalancingSettings = new();
 
     public async Task JoinGame(string gameId, int requestedRole)
     {
@@ -75,6 +77,7 @@ public class GameHub : Hub<IGameClient>, IGameHub
         if (_games.TryRemove(gameId, out var players))
         {
             _gameStarted.TryRemove(gameId, out _);
+            _gameBalancingSettings.TryRemove(gameId, out _);
             lock(players)
             {
                 foreach(var p in players)
@@ -102,11 +105,16 @@ public class GameHub : Hub<IGameClient>, IGameHub
         await Clients.All.ReceiveGameList(games);
     }
 
-    public async Task SetReady(bool isReady)
+    public async Task SetReady(bool isReady, string? balancingSettingsJson)
     {
         _playerReady[Context.ConnectionId] = isReady;
 
         if (!_playerToGame.TryGetValue(Context.ConnectionId, out var gameId)) return;
+
+        if (isReady && !string.IsNullOrEmpty(balancingSettingsJson))
+        {
+            _gameBalancingSettings[gameId] = balancingSettingsJson;
+        }
 
         // Notifier uniquement les autres joueurs de la MEME salle
         await Clients.GroupExcept(gameId, Context.ConnectionId).ReceiveOpponentReady(isReady);
@@ -125,9 +133,10 @@ public class GameHub : Hub<IGameClient>, IGameHub
                 _gameStarted[gameId] = true;
                 var seed = new Random().Next();
                 var startTime = DateTime.UtcNow.Ticks;
+                var settingsJson = _gameBalancingSettings.GetValueOrDefault(gameId);
                 
                 Console.WriteLine($"[START] Lancement du combat dans la salle {gameId}");
-                await Clients.Group(gameId).ReceiveGameStarted(seed, startTime);
+                await Clients.Group(gameId).ReceiveGameStarted(seed, startTime, settingsJson);
             }
         }
     }

@@ -32,7 +32,7 @@ public class SignalRGameClient : IGameHub
         _connection.On<CombatEvent>("ReceiveCombatEvent", (e) => OnCombatEventReceived?.Invoke(e));
         _connection.On<string, string>("ReceiveChat", (sender, message) => OnChatReceived?.Invoke(sender, message));
         _connection.On<PlayerAction>("ReceivePlayerAction", (action) => OnPlayerActionReceived?.Invoke(action));
-        _connection.On<int, long>("ReceiveGameStarted", (seed, startTime) => OnGameStarted?.Invoke(seed, startTime));
+        _connection.On<int, long, string?>("ReceiveGameStarted", (seed, startTime, settingsJson) => OnGameStarted?.Invoke(seed, startTime, settingsJson));
         _connection.On<bool>("ReceiveOpponentReady", (isReady) => OnOpponentReady?.Invoke(isReady));
         _connection.On("ReceiveRoomClosed", () => OnRoomClosed?.Invoke());
         _connection.On<int>("ReceiveRole", (role) => OnRoleReceived?.Invoke(role));
@@ -43,7 +43,7 @@ public class SignalRGameClient : IGameHub
     public event Action<CombatEvent>? OnCombatEventReceived;
     public event Action<string, string>? OnChatReceived;
     public event Action<PlayerAction>? OnPlayerActionReceived;
-    public event Action<int, long>? OnGameStarted;
+    public event Action<int, long, string?>? OnGameStarted;
     public event Action<bool>? OnOpponentReady;
     public event Action? OnRoomClosed;
     public event Action<int>? OnRoleReceived;
@@ -74,9 +74,9 @@ public class SignalRGameClient : IGameHub
         await _connection.InvokeAsync(nameof(GetActiveGames));
     }
 
-    public async Task SetReady(bool isReady)
+    public async Task SetReady(bool isReady, string? balancingSettingsJson)
     {
-        await _connection.InvokeAsync(nameof(SetReady), isReady);
+        await _connection.InvokeAsync(nameof(SetReady), isReady, balancingSettingsJson);
     }
 
     public async Task SendPlayerAction(PlayerAction action)

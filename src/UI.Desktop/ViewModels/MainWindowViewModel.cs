@@ -60,7 +60,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         });
         _networkCoordinator.RoleReceived += role => Avalonia.Threading.Dispatcher.UIThread.Post(() => SelectedRole = role);
         _networkCoordinator.OpponentReadyChanged += ready => Avalonia.Threading.Dispatcher.UIThread.Post(() => IsOpponentReady = ready);
-        _networkCoordinator.GameStarted += (seed, startTime) => Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+        _networkCoordinator.GameStarted += (seed, startTime, settingsJson) => Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+            ApplyServerBalancingSettings(settingsJson);
             _session = CreateSession(seed);
             _gameStartTime = new DateTime(startTime, DateTimeKind.Utc);
             _totalTicksProcessed = 0;
@@ -291,7 +292,35 @@ public sealed class MainWindowViewModel : ViewModelBase
         set 
         {
             this.RaiseAndSetIfChanged(ref _isReady, value);
-            _ = _networkCoordinator.SetReadyAsync(value);
+            string? settingsJson = null;
+            if (value)
+            {
+                try
+                {
+                    var data = new BalancingData
+                    {
+                        Towers = _customTowers.Select(t => new TowerBalancingData
+                        {
+                            Type = t.Type,
+                            Cost = t.Stats.Cost.Value,
+                            Damage = t.Stats.DamagePerShot.Value,
+                            Range = t.Stats.Range,
+                            Cooldown = t.Stats.CooldownTicksBetweenShots
+                        }).ToList(),
+                        Units = _customUnits.Select(u => new UnitBalancingData
+                        {
+                            Type = u.Type,
+                            Cost = u.Cost.Value,
+                            Health = u.Health.Value,
+                            Speed = u.SpeedPerTick,
+                            Bounty = u.LootGold.Value
+                        }).ToList()
+                    };
+                    settingsJson = System.Text.Json.JsonSerializer.Serialize(data);
+                }
+                catch {}
+            }
+            _ = _networkCoordinator.SetReadyAsync(value, settingsJson);
         }
     }
 
@@ -990,6 +1019,68 @@ public sealed class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Failed to save balancing settings: {ex.Message}");
+        }
+    }
+
+    public void ApplyServerBalancingSettings(string? json)
+    {
+        if (string.IsNullOrEmpty(json)) return;
+
+        try
+        {
+            var data = System.Text.Json.JsonSerializer.Deserialize<BalancingData>(json);
+            if (data != null)
+            {
+                var defaults = GameConfig.CreateMvpDefaults();
+                _customTowers = data.Towers.Select(t => {
+                    var def = defaults.Towers.FirstOrDefault(x => x.Type == t.Type);
+                    return new TowerDefinition(t.Type, new TowerStats(new Gold(t.Cost), new Damage(t.Damage), t.Range, t.Cooldown), def.Health);
+                }).ToList();
+
+                _customUnits = data.Units.Select(u => {
+                    var def = defaults.Units.FirstOrDefault(x => x.Type == u.Type);
+                    return new UnitDefinition(
+                        u.Type,
+                        new Budget(u.Cost),
+                        new Health(u.Health),
+                        u.Speed,
+                        def.DamageToBase,
+                        def.DamageToTower,
+                        def.AttackRange,
+                        def.AttackCooldownTicksBetweenAttacks,
+                        new Gold(u.Bounty)
+                    );
+                }).ToList();
+
+                RecreateConfig();
+
+                _isUpdatingFields = true;
+                UpdateTowerBalancingFields();
+                UpdateUnitBalancingFields();
+                _isUpdatingFields = false;
+
+                this.RaisePropertyChanged(nameof(BasicTowerCost));
+                this.RaisePropertyChanged(nameof(FlamethrowerCost));
+                this.RaisePropertyChanged(nameof(SniperTowerCost));
+                this.RaisePropertyChanged(nameof(CannonTowerCost));
+                this.RaisePropertyChanged(nameof(LaserTowerCost));
+                this.RaisePropertyChanged(nameof(CurrentTowerStats));
+
+                this.RaisePropertyChanged(nameof(SoldatCost));
+                this.RaisePropertyChanged(nameof(BruteCost));
+                this.RaisePropertyChanged(nameof(RapideCost));
+                this.RaisePropertyChanged(nameof(TireurEliteCost));
+                this.RaisePropertyChanged(nameof(TankCost));
+                this.RaisePropertyChanged(nameof(SoldatStats));
+                this.RaisePropertyChanged(nameof(BruteStats));
+                this.RaisePropertyChanged(nameof(RapideStats));
+                this.RaisePropertyChanged(nameof(TireurEliteStats));
+                this.RaisePropertyChanged(nameof(TankStats));
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to apply server balancing settings: {ex.Message}");
         }
     }
 
