@@ -3,7 +3,7 @@
     {
       "Type": 0,
       "Cost": 50,
-      "Damage": 5,
+      "Damage": 10,
       "Range": 250,
       "Cooldown": 30
     },

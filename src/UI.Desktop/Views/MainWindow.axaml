@@ -261,10 +261,15 @@
                                     </ComboBox>
                                 </StackPanel>
 
-                                <StackPanel Spacing="12" IsVisible="{Binding IsSoloMode}" HorizontalAlignment="Center">
-                                    <TextBlock Text="Options Avancées" FontWeight="Bold" FontSize="14" Foreground="White" HorizontalAlignment="Center" />
-                                    <ToggleSwitch IsChecked="{Binding IsBalancingMenuVisible}" Content="Réglages d'équilibrage" Foreground="White" OffContent="Masqués" OnContent="Affichés" HorizontalAlignment="Center" />
-                                </StackPanel>
+                                <Border Background="#10FFFFFF" CornerRadius="8" Padding="20,15" IsVisible="{Binding IsSoloMode}">
+                                    <Grid ColumnDefinitions="*, Auto">
+                                        <StackPanel VerticalAlignment="Center" Spacing="4">
+                                            <TextBlock Text="Réglages d'équilibrage" FontWeight="Bold" FontSize="14" Foreground="White" />
+                                            <TextBlock Text="Statistiques et paramètres avancés" FontSize="11" Foreground="#80FFFFFF" />
+                                        </StackPanel>
+                                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsBalancingMenuVisible}" OffContent="" OnContent="" Margin="15,0,0,0" VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
 
                                 <StackPanel Spacing="12" IsVisible="{Binding !IsSoloMode}">
                                     <TextBlock Text="Nouvelle Opération" FontWeight="Bold" FontSize="14" Foreground="White" />
