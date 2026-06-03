@@ -756,6 +756,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     }
 
     // --- BALANCING IMPLEMENTATION ---
+    private static readonly string SettingsFilePath = "balancing_settings.json";
+
     private List<TowerDefinition> _customTowers = new();
     private List<UnitDefinition> _customUnits = new();
     private GameConfig _customConfig = null!;
@@ -766,6 +768,49 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         var defaults = GameConfig.CreateMvpDefaults();
         
+        if (System.IO.File.Exists(SettingsFilePath))
+        {
+            try
+            {
+                var json = System.IO.File.ReadAllText(SettingsFilePath);
+                var data = System.Text.Json.JsonSerializer.Deserialize<BalancingData>(json);
+                if (data != null)
+                {
+                    _customTowers = data.Towers.Select(t => {
+                        var def = defaults.Towers.FirstOrDefault(x => x.Type == t.Type);
+                        return new TowerDefinition(t.Type, new TowerStats(new Gold(t.Cost), new Damage(t.Damage), t.Range, t.Cooldown), def.Health);
+                    }).ToList();
+
+                    _customUnits = data.Units.Select(u => {
+                        var def = defaults.Units.FirstOrDefault(x => x.Type == u.Type);
+                        return new UnitDefinition(
+                            u.Type,
+                            new Budget(u.Cost),
+                            new Health(u.Health),
+                            u.Speed,
+                            def.DamageToBase,
+                            def.DamageToTower,
+                            def.AttackRange,
+                            def.AttackCooldownTicksBetweenAttacks,
+                            new Gold(u.Bounty)
+                        );
+                    }).ToList();
+
+                    RecreateConfig();
+                    
+                    _isUpdatingFields = true;
+                    UpdateTowerBalancingFields();
+                    UpdateUnitBalancingFields();
+                    _isUpdatingFields = false;
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to load balancing settings: {ex.Message}");
+            }
+        }
+
         // Recommended balanced defaults:
         _customTowers = defaults.Towers.Select(t => {
             if (t.Type == TowerType.Sniper)
@@ -874,6 +919,8 @@ public sealed class MainWindowViewModel : ViewModelBase
             this.RaisePropertyChanged(nameof(CannonTowerCost));
             this.RaisePropertyChanged(nameof(LaserTowerCost));
             this.RaisePropertyChanged(nameof(CurrentTowerStats));
+
+            SaveSettingsToJson();
         }
     }
 
@@ -907,6 +954,42 @@ public sealed class MainWindowViewModel : ViewModelBase
             this.RaisePropertyChanged(nameof(RapideStats));
             this.RaisePropertyChanged(nameof(TireurEliteStats));
             this.RaisePropertyChanged(nameof(TankStats));
+
+            SaveSettingsToJson();
+        }
+    }
+
+    private void SaveSettingsToJson()
+    {
+        try
+        {
+            var data = new BalancingData
+            {
+                Towers = _customTowers.Select(t => new TowerBalancingData
+                {
+                    Type = t.Type,
+                    Cost = t.Stats.Cost.Value,
+                    Damage = t.Stats.DamagePerShot.Value,
+                    Range = t.Stats.Range,
+                    Cooldown = t.Stats.CooldownTicksBetweenShots
+                }).ToList(),
+                Units = _customUnits.Select(u => new UnitBalancingData
+                {
+                    Type = u.Type,
+                    Cost = u.Cost.Value,
+                    Health = u.Health.Value,
+                    Speed = u.SpeedPerTick,
+                    Bounty = u.LootGold.Value
+                }).ToList()
+            };
+
+            var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
+            var json = System.Text.Json.JsonSerializer.Serialize(data, options);
+            System.IO.File.WriteAllText(SettingsFilePath, json);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to save balancing settings: {ex.Message}");
         }
     }
 
@@ -923,4 +1006,28 @@ public enum PlayerRole
     Both,
     Attacker,
     Defender
+}
+
+public sealed class BalancingData
+{
+    public List<TowerBalancingData> Towers { get; set; } = new();
+    public List<UnitBalancingData> Units { get; set; } = new();
+}
+
+public sealed class TowerBalancingData
+{
+    public TowerType Type { get; set; }
+    public int Cost { get; set; }
+    public int Damage { get; set; }
+    public int Range { get; set; }
+    public int Cooldown { get; set; }
+}
+
+public sealed class UnitBalancingData
+{
+    public UnitType Type { get; set; }
+    public int Cost { get; set; }
+    public int Health { get; set; }
+    public int Speed { get; set; }
+    public int Bounty { get; set; }
 }
