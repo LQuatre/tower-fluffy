@@ -25,10 +25,10 @@ public sealed record GameConfig(
             TotalWaves: 10,
             PreparationTicks: 60 * 30,
             WaveSendWindowTicks: 60 * 20,
-            BaseWaveBudget: new Budget(80),
+            BaseWaveBudget: new Budget(100),
             WaveBudgetIncrement: new Budget(20),
             BudgetBonusPerTowerDestroyed: new Budget(10),
-            StartingGold: new Gold(500),
+            StartingGold: new Gold(200),
             StartingBaseHealth: new Health(100),
             GoldPerBaseDamageTaken: 10,
             Towers: new[]
