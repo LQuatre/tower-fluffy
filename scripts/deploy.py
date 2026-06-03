@@ -12,30 +12,29 @@ def run(command, cwd=REPO_ROOT):
     subprocess.run(command, cwd=cwd, check=True)
 
 def create_launchers(publish_base):
-    # --- Raccourcis à la RACINE du dossier publish ---
-    
     # Windows
-    with open(publish_base / "Lancer_Jeu_Windows.bat", "w", encoding="utf-8") as f:
-        f.write("@echo off\nstart \"\" \"Windows\\TowerFluffy.UI.Desktop.exe\"\n")
-    
-    # Linux
-    with open(publish_base / "Lancer_Jeu_Linux.sh", "w", encoding="utf-8") as f:
-        f.write("#!/bin/bash\nchmod +x ./Linux/TowerFluffy.UI.Desktop\n./Linux/TowerFluffy.UI.Desktop\n")
-    
-    # MacOS (Détection auto à la racine)
-    with open(publish_base / "Lancer_Jeu_MacOS.sh", "w", encoding="utf-8") as f:
-        f.write("#!/bin/bash\nARCH=$(uname -m)\nif [ \"$ARCH\" == \"arm64\" ]; then\n    chmod +x ./MacOS_AppleSilicon/TowerFluffy.UI.Desktop\n    ./MacOS_AppleSilicon/TowerFluffy.UI.Desktop\nelse\n    chmod +x ./MacOS_Intel/TowerFluffy.UI.Desktop\n    ./MacOS_Intel/TowerFluffy.UI.Desktop\nfi\n")
-
-    # --- Également à l'intérieur de chaque dossier (pour plus de sécurité) ---
     win_dir = publish_base / "Windows"
     if win_dir.exists():
-        with open(win_dir / "Lancer_Direct.bat", "w", encoding="utf-8") as f:
-            f.write("@echo off\nstart \"\" \"TowerFluffy.UI.Desktop.exe\"\n")
+        with open(win_dir / "Lancer_Jeu.bat", "w", encoding="utf-8") as f:
+            f.write("@echo off\ncd /d \"%~dp0\"\nstart \"\" \"TowerFluffy.UI.Desktop.exe\"\n")
     
+    # Linux
     linux_dir = publish_base / "Linux"
     if linux_dir.exists():
-        with open(linux_dir / "Lancer_Direct.sh", "w", encoding="utf-8") as f:
-            f.write("#!/bin/bash\nchmod +x ./TowerFluffy.UI.Desktop\n./TowerFluffy.UI.Desktop\n")
+        with open(linux_dir / "Lancer_Jeu.sh", "w", encoding="utf-8", newline="\n") as f:
+            f.write("#!/bin/bash\ncd \"$(dirname \"$0\")\"\nchmod +x ./TowerFluffy.UI.Desktop\n./TowerFluffy.UI.Desktop\n")
+            
+    # MacOS Intel
+    mac_intel_dir = publish_base / "MacOS_Intel"
+    if mac_intel_dir.exists():
+        with open(mac_intel_dir / "Lancer_Jeu.sh", "w", encoding="utf-8", newline="\n") as f:
+            f.write("#!/bin/bash\ncd \"$(dirname \"$0\")\"\nchmod +x ./TowerFluffy.UI.Desktop\n./TowerFluffy.UI.Desktop\n")
+            
+    # MacOS Apple Silicon
+    mac_arm_dir = publish_base / "MacOS_AppleSilicon"
+    if mac_arm_dir.exists():
+        with open(mac_arm_dir / "Lancer_Jeu.sh", "w", encoding="utf-8", newline="\n") as f:
+            f.write("#!/bin/bash\ncd \"$(dirname \"$0\")\"\nchmod +x ./TowerFluffy.UI.Desktop\n./TowerFluffy.UI.Desktop\n")
 
 def main():
     message = input("Message du commit (ex: 'MAJ graphismes') : ")
@@ -46,7 +45,17 @@ def main():
     try:
         run(["git", "add", "."])
         run(["git", "commit", "-m", message])
-        run(["git", "push", "origin", "main"])
+        
+        # Détection de la branche active pour pousser sur la bonne branche
+        branch = "main"
+        try:
+            import subprocess as sp
+            res = sp.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True, check=True)
+            branch = res.stdout.strip()
+        except Exception as ex:
+            print(f"Erreur de détection de branche, repli sur main: {ex}")
+            
+        run(["git", "push", "origin", branch])
     except Exception as e:
         print(f"Note: Git push a peut-être échoué ou rien à commit ({e})")
 
@@ -77,8 +86,16 @@ def main():
     print("\n--- [FINAL] CRÉATION DES RACCOURCIS DANS /PUBLISH/ ---")
     create_launchers(publish_dir)
 
+    print("\n--- COMPRESSION DES BUILDS EN ARCHIVES ZIP ---")
+    for folder in platforms.keys():
+        folder_path = publish_dir / folder
+        if folder_path.exists():
+            zip_name = publish_dir / f"TowerFluffy_{folder}"
+            print(f"Création de l'archive {zip_name}.zip...")
+            shutil.make_archive(str(zip_name), "zip", root_dir=str(folder_path))
+
     print("\n✅ OPÉRATION TERMINÉE !")
-    print("Les nouveaux builds et raccourcis sont dans le dossier 'publish/'.")
+    print("Les nouveaux dossiers de builds et les fichiers ZIP individuels correspondants sont dans le dossier 'publish/'.")
     print("Votre code est à jour sur GitHub.")
 
 if __name__ == "__main__":
