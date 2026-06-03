@@ -12,6 +12,8 @@ using System.Globalization;
 using System.Reactive;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 
 using RxUnit = System.Reactive.Unit;
 
@@ -31,7 +33,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     private bool _isGameStarted;
     private bool _isOpponentReady;
     private bool _isInGameRoom;
-    private string _serverUrl = "http://localhost:5128/gameHub";
+    private string _serverUrl = $"http://{GetLocalIPAddress()}:5128/gameHub";
     private System.Collections.ObjectModel.ObservableCollection<GameInfoDto> _availableGames = new();
     private PlayerRole _selectedRole = PlayerRole.Both;
     private GridPosition? _movingTowerFrom;
@@ -586,6 +588,30 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         LastError = null;
         Snapshot = _session.State;
+    }
+
+    private static string GetLocalIPAddress()
+    {
+        try
+        {
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    var ipStr = ip.ToString();
+                    if (!ipStr.StartsWith("127."))
+                    {
+                        return ipStr;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Fallback
+        }
+        return "localhost";
     }
 }
 
