@@ -113,10 +113,10 @@ public class GameHub : Hub<IGameClient>, IGameHub
 
         if (isReady && !string.IsNullOrEmpty(balancingSettingsJson))
         {
-            if (_games.TryGetValue(gameId, out var players))
+            if (_games.TryGetValue(gameId, out var roomPlayers))
             {
                 string? firstPlayer;
-                lock(players) firstPlayer = players.FirstOrDefault();
+                lock(roomPlayers) firstPlayer = roomPlayers.FirstOrDefault();
                 if (firstPlayer == Context.ConnectionId)
                 {
                     _gameBalancingSettings[gameId] = balancingSettingsJson;
