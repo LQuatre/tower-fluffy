@@ -139,6 +139,15 @@
                                                     <Slider Minimum="10" Maximum="800" Value="{Binding BalancingTowerCost}" SmallChange="5" LargeChange="50" TickFrequency="5" IsSnapToTickEnabled="True" />
                                                 </StackPanel>
 
+                                                <!-- PV -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Points de vie maximum :" FontSize="12" Foreground="White" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding BalancingTowerHealth}" FontSize="12" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" />
+                                                    </Grid>
+                                                    <Slider Minimum="50" Maximum="5000" Value="{Binding BalancingTowerHealth}" SmallChange="50" LargeChange="200" TickFrequency="50" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+
                                                 <!-- Dégâts -->
                                                 <StackPanel Spacing="6">
                                                     <Grid ColumnDefinitions="*, Auto">
@@ -218,6 +227,18 @@
                                                         </StackPanel>
                                                     </Grid>
                                                     <Slider Minimum="1" Maximum="10" Value="{Binding BalancingUnitSpeed}" SmallChange="1" LargeChange="2" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+
+                                                <!-- Portée -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Portée d'attaque (pixels) :" FontSize="12" Foreground="White" />
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                                            <TextBlock Text="{Binding BalancingUnitRange}" FontSize="12" Foreground="#EF4444" FontWeight="Bold" />
+                                                            <TextBlock Text="px" FontSize="10" Foreground="#80FFFFFF" VerticalAlignment="Bottom" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <Slider Minimum="10" Maximum="600" Value="{Binding BalancingUnitRange}" SmallChange="10" LargeChange="50" TickFrequency="10" IsSnapToTickEnabled="True" />
                                                 </StackPanel>
 
                                                 <!-- Bounty -->
@@ -423,6 +444,15 @@
                                                     <Slider Minimum="10" Maximum="800" Value="{Binding BalancingTowerCost}" SmallChange="5" LargeChange="50" TickFrequency="5" IsSnapToTickEnabled="True" />
                                                 </StackPanel>
 
+                                                <!-- PV -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Points de vie maximum :" FontSize="12" Foreground="White" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding BalancingTowerHealth}" FontSize="12" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" />
+                                                    </Grid>
+                                                    <Slider Minimum="50" Maximum="5000" Value="{Binding BalancingTowerHealth}" SmallChange="50" LargeChange="200" TickFrequency="50" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+
                                                 <!-- Dégâts -->
                                                 <StackPanel Spacing="6">
                                                     <Grid ColumnDefinitions="*, Auto">
@@ -502,6 +532,18 @@
                                                         </StackPanel>
                                                     </Grid>
                                                     <Slider Minimum="1" Maximum="10" Value="{Binding BalancingUnitSpeed}" SmallChange="1" LargeChange="2" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                                </StackPanel>
+
+                                                <!-- Portée -->
+                                                <StackPanel Spacing="6">
+                                                    <Grid ColumnDefinitions="*, Auto">
+                                                        <TextBlock Text="Portée d'attaque (pixels) :" FontSize="12" Foreground="White" />
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                                            <TextBlock Text="{Binding BalancingUnitRange}" FontSize="12" Foreground="#EF4444" FontWeight="Bold" />
+                                                            <TextBlock Text="px" FontSize="10" Foreground="#80FFFFFF" VerticalAlignment="Bottom" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <Slider Minimum="10" Maximum="600" Value="{Binding BalancingUnitRange}" SmallChange="10" LargeChange="50" TickFrequency="10" IsSnapToTickEnabled="True" />
                                                 </StackPanel>
 
                                                 <!-- Bounty -->

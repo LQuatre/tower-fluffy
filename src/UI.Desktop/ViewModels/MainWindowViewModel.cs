@@ -157,6 +157,16 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
+    private int _balancingTowerHealth;
+    public int BalancingTowerHealth
+    {
+        get => _balancingTowerHealth;
+        set {
+            this.RaiseAndSetIfChanged(ref _balancingTowerHealth, value);
+            if (!_isUpdatingFields) SaveTowerBalancingChanges();
+        }
+    }
+
     private int _balancingTowerDamage;
     public int BalancingTowerDamage
     {
@@ -213,6 +223,16 @@ public sealed class MainWindowViewModel : ViewModelBase
         get => _balancingUnitSpeed;
         set {
             this.RaiseAndSetIfChanged(ref _balancingUnitSpeed, value);
+            if (!_isUpdatingFields) SaveUnitBalancingChanges();
+        }
+    }
+
+    private int _balancingUnitRange;
+    public int BalancingUnitRange
+    {
+        get => _balancingUnitRange;
+        set {
+            this.RaiseAndSetIfChanged(ref _balancingUnitRange, value);
             if (!_isUpdatingFields) SaveUnitBalancingChanges();
         }
     }
@@ -874,7 +894,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                 {
                     _customTowers = data.Towers.Select(t => {
                         var def = defaults.Towers.FirstOrDefault(x => x.Type == t.Type);
-                        return new TowerDefinition(t.Type, new TowerStats(new Gold(t.Cost), new Damage(t.Damage), t.Range, t.Cooldown), def.Health);
+                        return new TowerDefinition(t.Type, new TowerStats(new Gold(t.Cost), new Damage(t.Damage), t.Range, t.Cooldown), new Health(t.Health > 0 ? t.Health : def.Health.Value));
                     }).ToList();
 
                     _customUnits = data.Units.Select(u => {
@@ -886,7 +906,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                             u.Speed,
                             def.DamageToBase,
                             def.DamageToTower,
-                            def.AttackRange,
+                            u.Range > 0 ? u.Range : def.AttackRange,
                             def.AttackCooldownTicksBetweenAttacks,
                             new Gold(u.Bounty)
                         );
@@ -975,6 +995,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             var t = _customTowers[idx];
             BalancingTowerCost = t.Stats.Cost.Value;
+            BalancingTowerHealth = t.Health.Value;
             BalancingTowerDamage = t.Stats.DamagePerShot.Value;
             BalancingTowerRange = t.Stats.Range;
             BalancingTowerCooldown = t.Stats.CooldownTicksBetweenShots;
@@ -991,6 +1012,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             BalancingUnitCost = u.Cost.Value;
             BalancingUnitHealth = u.Health.Value;
             BalancingUnitSpeed = u.SpeedPerTick;
+            BalancingUnitRange = u.AttackRange;
             BalancingUnitBounty = u.LootGold.Value;
         }
     }
@@ -1005,7 +1027,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             _customTowers[idx] = new TowerDefinition(
                 type,
                 new TowerStats(new Gold(BalancingTowerCost), new Damage(BalancingTowerDamage), BalancingTowerRange, BalancingTowerCooldown),
-                existing.Health
+                new Health(BalancingTowerHealth)
             );
             RecreateConfig();
 
@@ -1034,7 +1056,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                 BalancingUnitSpeed,
                 existing.DamageToBase,
                 existing.DamageToTower,
-                existing.AttackRange,
+                BalancingUnitRange,
                 existing.AttackCooldownTicksBetweenAttacks,
                 new Gold(BalancingUnitBounty)
             );
@@ -1065,6 +1087,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                 {
                     Type = t.Type,
                     Cost = t.Stats.Cost.Value,
+                    Health = t.Health.Value,
                     Damage = t.Stats.DamagePerShot.Value,
                     Range = t.Stats.Range,
                     Cooldown = t.Stats.CooldownTicksBetweenShots
@@ -1075,6 +1098,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                     Cost = u.Cost.Value,
                     Health = u.Health.Value,
                     Speed = u.SpeedPerTick,
+                    Range = u.AttackRange,
                     Bounty = u.LootGold.Value
                 }).ToList()
             };
@@ -1106,7 +1130,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                 var defaults = GameConfig.CreateMvpDefaults();
                 _customTowers = data.Towers.Select(t => {
                     var def = defaults.Towers.FirstOrDefault(x => x.Type == t.Type);
-                    return new TowerDefinition(t.Type, new TowerStats(new Gold(t.Cost), new Damage(t.Damage), t.Range, t.Cooldown), def.Health);
+                    return new TowerDefinition(t.Type, new TowerStats(new Gold(t.Cost), new Damage(t.Damage), t.Range, t.Cooldown), new Health(t.Health > 0 ? t.Health : def.Health.Value));
                 }).ToList();
 
                 _customUnits = data.Units.Select(u => {
@@ -1118,7 +1142,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                         u.Speed,
                         def.DamageToBase,
                         def.DamageToTower,
-                        def.AttackRange,
+                        u.Range > 0 ? u.Range : def.AttackRange,
                         def.AttackCooldownTicksBetweenAttacks,
                         new Gold(u.Bounty)
                     );
@@ -1181,6 +1205,7 @@ public sealed class TowerBalancingData
 {
     public TowerType Type { get; set; }
     public int Cost { get; set; }
+    public int Health { get; set; }
     public int Damage { get; set; }
     public int Range { get; set; }
     public int Cooldown { get; set; }
@@ -1192,5 +1217,6 @@ public sealed class UnitBalancingData
     public int Cost { get; set; }
     public int Health { get; set; }
     public int Speed { get; set; }
+    public int Range { get; set; }
     public int Bounty { get; set; }
 }

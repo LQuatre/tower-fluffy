@@ -4,7 +4,7 @@
       "Type": 0,
       "Cost": 50,
       "Damage": 10,
-      "Range": 250,
+      "Range": 150,
       "Cooldown": 30
     },
     {
@@ -39,7 +39,7 @@
   "Units": [
     {
       "Type": 0,
-      "Cost": 12,
+      "Cost": 10,
       "Health": 5,
       "Speed": 2,
       "Bounty": 5
