@@ -26,6 +26,12 @@ public partial class MainWindow : SukiWindow
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
+        if (e.Source is TextBox)
+        {
+            base.OnKeyDown(e);
+            return;
+        }
+
         base.OnKeyDown(e);
 
         if (DataContext is TowerFluffy.UI.Desktop.ViewModels.MainWindowViewModel vm)
