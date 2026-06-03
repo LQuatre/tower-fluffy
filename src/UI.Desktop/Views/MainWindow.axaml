@@ -98,7 +98,8 @@
 
                         <!-- PANEL 2 : MENU D'ÉQUILIBRAGE TACTIQUE -->
                         <suki:GlassCard CornerRadius="12" Padding="0" IsVisible="{Binding IsBalancingMenuVisible}">
-                            <Grid RowDefinitions="Auto, *">
+                            <ScrollViewer>
+                                <Grid RowDefinitions="Auto, *">
                                 <Border Grid.Row="0" BorderBrush="#20FFFFFF" BorderThickness="0,0,0,1" Padding="25,15" Background="#0AFFFFFF" CornerRadius="12,12,0,0">
                                     <StackPanel Spacing="5" HorizontalAlignment="Center">
                                         <TextBlock Text="RÉGLAGES D'ÉQUILIBRAGE (SOLO)" FontSize="16" FontWeight="Bold" LetterSpacing="2" Foreground="White" HorizontalAlignment="Center" />
@@ -243,7 +244,8 @@
                                     </Border>
                                 </Grid>
                             </Grid>
-                        </suki:GlassCard>
+                        </ScrollViewer>
+                    </suki:GlassCard>
                     </Grid>
 
                     <!-- DROITE : OPTIONS (Largeur fixe de 450 pour rester propre) -->
@@ -259,9 +261,9 @@
                                     </ComboBox>
                                 </StackPanel>
 
-                                <StackPanel Spacing="12" IsVisible="{Binding IsSoloMode}">
-                                    <TextBlock Text="Options Avancées" FontWeight="Bold" FontSize="14" Foreground="White" />
-                                    <ToggleSwitch IsChecked="{Binding IsBalancingMenuVisible}" Content="Réglages d'équilibrage" Foreground="White" OffContent="Masqués" OnContent="Affichés" />
+                                <StackPanel Spacing="12" IsVisible="{Binding IsSoloMode}" HorizontalAlignment="Center">
+                                    <TextBlock Text="Options Avancées" FontWeight="Bold" FontSize="14" Foreground="White" HorizontalAlignment="Center" />
+                                    <ToggleSwitch IsChecked="{Binding IsBalancingMenuVisible}" Content="Réglages d'équilibrage" Foreground="White" OffContent="Masqués" OnContent="Affichés" HorizontalAlignment="Center" />
                                 </StackPanel>
 
                                 <StackPanel Spacing="12" IsVisible="{Binding !IsSoloMode}">

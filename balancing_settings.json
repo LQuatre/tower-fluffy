@@ -1,0 +1,76 @@
+{
+  "Towers": [
+    {
+      "Type": 0,
+      "Cost": 50,
+      "Damage": 5,
+      "Range": 250,
+      "Cooldown": 30
+    },
+    {
+      "Type": 1,
+      "Cost": 285,
+      "Damage": 3,
+      "Range": 180,
+      "Cooldown": 8
+    },
+    {
+      "Type": 2,
+      "Cost": 200,
+      "Damage": 40,
+      "Range": 400,
+      "Cooldown": 75
+    },
+    {
+      "Type": 3,
+      "Cost": 300,
+      "Damage": 60,
+      "Range": 220,
+      "Cooldown": 60
+    },
+    {
+      "Type": 4,
+      "Cost": 400,
+      "Damage": 10,
+      "Range": 300,
+      "Cooldown": 10
+    }
+  ],
+  "Units": [
+    {
+      "Type": 0,
+      "Cost": 12,
+      "Health": 5,
+      "Speed": 2,
+      "Bounty": 5
+    },
+    {
+      "Type": 1,
+      "Cost": 60,
+      "Health": 80,
+      "Speed": 1,
+      "Bounty": 20
+    },
+    {
+      "Type": 2,
+      "Cost": 20,
+      "Health": 15,
+      "Speed": 4,
+      "Bounty": 8
+    },
+    {
+      "Type": 3,
+      "Cost": 40,
+      "Health": 30,
+      "Speed": 2,
+      "Bounty": 15
+    },
+    {
+      "Type": 4,
+      "Cost": 100,
+      "Health": 300,
+      "Speed": 1,
+      "Bounty": 40
+    }
+  ]
+}
