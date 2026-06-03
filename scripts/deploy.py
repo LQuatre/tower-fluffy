@@ -2,6 +2,7 @@ import subprocess
 import sys
 import os
 import shutil
+import zipfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -10,6 +11,33 @@ UI_PROJECT = REPO_ROOT / "src" / "UI.Desktop" / "TowerFluffy.UI.Desktop.csproj"
 def run(command, cwd=REPO_ROOT):
     print(f"+ {' '.join(command)}")
     subprocess.run(command, cwd=cwd, check=True)
+
+def zip_folder(folder_to_zip, zip_filepath):
+    with zipfile.ZipFile(zip_filepath, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for root, dirs, files in os.walk(folder_to_zip):
+            for file in files:
+                filepath = Path(root) / file
+                relative_path = filepath.relative_to(folder_to_zip)
+                
+                with open(filepath, 'rb') as f:
+                    file_data = f.read()
+                
+                zip_info = zipfile.ZipInfo(str(relative_path).replace("\\", "/"))
+                
+                # Détecter si c'est un exécutable ou un script shell
+                is_executable = (
+                    filepath.suffix in ['.sh', '.bat'] or 
+                    filepath.name == 'TowerFluffy.UI.Desktop' or 
+                    filepath.name == 'TowerFluffy.UI.Desktop.exe'
+                )
+                
+                if is_executable:
+                    zip_info.external_attr = 0o100755 << 16
+                else:
+                    zip_info.external_attr = 0o100644 << 16
+                
+                zip_info.create_system = 3  # UNIX
+                zipf.writestr(zip_info, file_data)
 
 def create_launchers(publish_base):
     # Windows
@@ -24,17 +52,56 @@ def create_launchers(publish_base):
         with open(linux_dir / "Lancer_Jeu.sh", "w", encoding="utf-8", newline="\n") as f:
             f.write("#!/bin/bash\ncd \"$(dirname \"$0\")\"\nchmod +x ./TowerFluffy.UI.Desktop\n./TowerFluffy.UI.Desktop\n")
             
-    # MacOS Intel
-    mac_intel_dir = publish_base / "MacOS_Intel"
-    if mac_intel_dir.exists():
-        with open(mac_intel_dir / "Lancer_Jeu.sh", "w", encoding="utf-8", newline="\n") as f:
-            f.write("#!/bin/bash\ncd \"$(dirname \"$0\")\"\nchmod +x ./TowerFluffy.UI.Desktop\n./TowerFluffy.UI.Desktop\n")
+    # MacOS App Bundling (Intel et Apple Silicon)
+    mac_folders = ["MacOS_Intel", "MacOS_AppleSilicon"]
+    for mac_folder in mac_folders:
+        mac_dir = publish_base / mac_folder
+        if mac_dir.exists():
+            app_dir = mac_dir / "TowerFluffy.app"
+            contents_dir = app_dir / "Contents"
+            macos_dir = contents_dir / "MacOS"
             
-    # MacOS Apple Silicon
-    mac_arm_dir = publish_base / "MacOS_AppleSilicon"
-    if mac_arm_dir.exists():
-        with open(mac_arm_dir / "Lancer_Jeu.sh", "w", encoding="utf-8", newline="\n") as f:
-            f.write("#!/bin/bash\ncd \"$(dirname \"$0\")\"\nchmod +x ./TowerFluffy.UI.Desktop\n./TowerFluffy.UI.Desktop\n")
+            os.makedirs(macos_dir, exist_ok=True)
+            
+            # Déplacer tout le contenu de mac_dir vers Contents/MacOS
+            for item in os.listdir(mac_dir):
+                item_path = mac_dir / item
+                if item == "TowerFluffy.app":
+                    continue
+                shutil.move(str(item_path), str(macos_dir / item))
+            
+            # Créer le Info.plist
+            info_plist_content = """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>English</string>
+    <key>CFBundleExecutable</key>
+    <string>TowerFluffy.UI.Desktop</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.lucas.towerfluffy</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>TowerFluffy</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>CFBundleVersion</key>
+    <string>1.0.0</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>10.12</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+</dict>
+</plist>
+"""
+            with open(contents_dir / "Info.plist", "w", encoding="utf-8") as f:
+                f.write(info_plist_content)
 
 def main():
     message = input("Message du commit (ex: 'MAJ graphismes') : ")
@@ -90,9 +157,9 @@ def main():
     for folder in platforms.keys():
         folder_path = publish_dir / folder
         if folder_path.exists():
-            zip_name = publish_dir / f"TowerFluffy_{folder}"
-            print(f"Création de l'archive {zip_name}.zip...")
-            shutil.make_archive(str(zip_name), "zip", root_dir=str(folder_path))
+            zip_file = publish_dir / f"TowerFluffy_{folder}.zip"
+            print(f"Création de l'archive {zip_file.name} (avec préservation des permissions)...")
+            zip_folder(folder_path, zip_file)
 
     print("\n✅ OPÉRATION TERMINÉE !")
     print("Les nouveaux dossiers de builds et les fichiers ZIP individuels correspondants sont dans le dossier 'publish/'.")
