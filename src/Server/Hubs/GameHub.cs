@@ -16,8 +16,10 @@ public class GameHub : Hub<IGameClient>, IGameHub
     private static readonly ConcurrentDictionary<string, bool> _playerReady = new();
     // Mapping: ConnectionId -> GameId
     private static readonly ConcurrentDictionary<string, string> _playerToGame = new();
+    // Mapping: ConnectionId -> Role (1 = Attacker, 2 = Defender)
+    private static readonly ConcurrentDictionary<string, int> _playerRoles = new();
 
-    public async Task JoinGame(string gameId)
+    public async Task JoinGame(string gameId, int requestedRole)
     {
         if (string.IsNullOrEmpty(gameId)) return;
 
@@ -37,12 +39,25 @@ public class GameHub : Hub<IGameClient>, IGameHub
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
         
         var gamePlayers = _games.GetOrAdd(gameId, _ => new HashSet<string>());
+        int assignedRole;
         lock(gamePlayers)
         {
+            if (gamePlayers.Count == 0)
+            {
+                assignedRole = requestedRole == 0 ? 2 : requestedRole;
+            }
+            else
+            {
+                var firstPlayer = gamePlayers.First();
+                var firstRole = _playerRoles.GetValueOrDefault(firstPlayer, 2);
+                assignedRole = firstRole == 1 ? 2 : 1;
+            }
             gamePlayers.Add(Context.ConnectionId);
+            _playerRoles[Context.ConnectionId] = assignedRole;
         }
         _gameStarted.TryAdd(gameId, false);
 
+        await Clients.Caller.ReceiveRole(assignedRole);
         await Clients.Group(gameId).ReceiveChat("SERVEUR", $"Un nouveau pilote a rejoint la salle {gameId}");
         await NotifyGameListChanged();
     }
@@ -100,6 +115,7 @@ public class GameHub : Hub<IGameClient>, IGameHub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         _playerReady.TryRemove(Context.ConnectionId, out _);
+        _playerRoles.TryRemove(Context.ConnectionId, out _);
         
         if (_playerToGame.TryRemove(Context.ConnectionId, out var gameId))
         {

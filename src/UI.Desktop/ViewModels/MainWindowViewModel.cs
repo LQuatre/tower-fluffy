@@ -475,6 +475,9 @@ public sealed class MainWindowViewModel : ViewModelBase
                 _availableGames.Clear();
                 foreach (var g in games) _availableGames.Add(g);
             });
+            _networkClient.OnRoleReceived += (role) => Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                SelectedRole = (PlayerRole)role;
+            });
             
             await _networkClient.StartAsync();
             IsConnected = true;
@@ -506,7 +509,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         if (_networkClient != null)
         {
-            await _networkClient.JoinGame(gameId);
+            await _networkClient.JoinGame(gameId, (int)SelectedRole);
             IsInGameRoom = true;
         }
     }

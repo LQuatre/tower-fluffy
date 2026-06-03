@@ -13,5 +13,6 @@ public interface IGameClient
     Task ReceivePlayerAction(PlayerAction action);
     Task ReceiveGameStarted(int seed, long startTimeUtc);
     Task ReceiveOpponentReady(bool isReady);
+    Task ReceiveRole(int role);
     Task ReceiveGameList(List<GameInfoDto> games);
 }
