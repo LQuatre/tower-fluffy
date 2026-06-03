@@ -546,6 +546,28 @@
                     </TextBlock.Effect>
                 </TextBlock>
 
+                <!-- ANALYSE D'ÉQUILIBRAGE DE FIN DE PARTIE -->
+                <suki:GlassCard Width="650" Padding="25,20" CornerRadius="16" Margin="0,20,0,0" BorderBrush="#30FFFFFF" BorderThickness="1">
+                    <StackPanel Spacing="15">
+                        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                            <TextBlock Text="📊" FontSize="18" VerticalAlignment="Center" />
+                            <TextBlock Text="RAPPORT D'ANALYSE &amp; ÉQUILIBRAGE" FontSize="14" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" LetterSpacing="2" VerticalAlignment="Center" />
+                        </StackPanel>
+                        
+                        <Rectangle Height="1" Fill="#20FFFFFF" />
+                        
+                        <ItemsControl ItemsSource="{Binding BalancingSuggestions}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#0AFFFFFF" CornerRadius="6" Padding="12,8" Margin="0,4" BorderBrush="#15FFFFFF" BorderThickness="1">
+                                        <TextBlock Text="{Binding}" Foreground="#E0FFFFFF" FontSize="12" TextWrapping="Wrap" LineHeight="18" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </suki:GlassCard>
+
                 <StackPanel Orientation="Horizontal" Spacing="30" HorizontalAlignment="Center" Margin="0,30,0,0">
                     <Button Command="{Binding ReplayCommand}" 
                             Classes="Flat" Background="{StaticResource AccentBrush}" Foreground="White" 

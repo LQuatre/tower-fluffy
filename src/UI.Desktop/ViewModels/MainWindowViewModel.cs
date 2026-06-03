@@ -39,6 +39,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     private PlayerRole _selectedRole = PlayerRole.Both;
     private GridPosition? _movingTowerFrom;
     private TowerType _currentTowerType = TowerType.BasicShooter;
+    private readonly MatchAnalyzer _analyzer = new();
+    private System.Collections.ObjectModel.ObservableCollection<string> _balancingSuggestions = new();
+    public System.Collections.ObjectModel.ObservableCollection<string> BalancingSuggestions => _balancingSuggestions;
 
     public MainWindowViewModel()
         : this(GameSession.CreateMvp())
@@ -67,6 +70,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             _totalTicksProcessed = 0;
             Snapshot = _session.State;
             IsGameStarted = true;
+            _analyzer.Reset(_session.State.Config.StartingGold.Value);
         });
         _networkCoordinator.PlayerActionReceived += HandleNetworkAction;
         _networkCoordinator.ErrorOccurred += err => Avalonia.Threading.Dispatcher.UIThread.Post(() => LastError = string.IsNullOrEmpty(err) ? null : err);
@@ -352,7 +356,15 @@ public sealed class MainWindowViewModel : ViewModelBase
         get => _snapshot;
         private set
         {
+            var oldFinished = _snapshot?.Phase == MatchPhase.Finished;
             this.RaiseAndSetIfChanged(ref _snapshot, value);
+            var newFinished = _snapshot?.Phase == MatchPhase.Finished;
+            
+            if (newFinished && !oldFinished)
+            {
+                OnGameEnded();
+            }
+
             this.RaisePropertyChanged(nameof(PreparationTimeFormatted));
             this.RaisePropertyChanged(nameof(WaveSendTimeFormatted));
             this.RaisePropertyChanged(nameof(IsPreparationTimerVisible));
@@ -527,7 +539,9 @@ public sealed class MainWindowViewModel : ViewModelBase
         _session.Tick(ticksToProcess);
         _totalTicksProcessed += ticksToProcess;
         
-        Snapshot = _session.State;
+        var state = _session.State;
+        _analyzer.RecordEvents(state.LastCombatEvents);
+        Snapshot = state;
 
         SoundEffects.PlayEvents(Snapshot.LastCombatEvents, Snapshot.Simulation.Units);
     }
@@ -541,35 +555,45 @@ public sealed class MainWindowViewModel : ViewModelBase
     private void ExecuteSendSoldat()
     {
         if (!CanSendUnits) return;
-        Apply(_session.SendUnit(UnitType.Soldat));
+        var res = _session.SendUnit(UnitType.Soldat);
+        if (res.IsSuccess) _analyzer.RecordUnitSent(UnitType.Soldat);
+        Apply(res);
         BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitType.Soldat);
     }
 
     private void ExecuteSendBrute()
     {
         if (!CanSendUnits) return;
-        Apply(_session.SendUnit(UnitType.Brute));
+        var res = _session.SendUnit(UnitType.Brute);
+        if (res.IsSuccess) _analyzer.RecordUnitSent(UnitType.Brute);
+        Apply(res);
         BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitType.Brute);
     }
 
     private void ExecuteSendRapide()
     {
         if (!CanSendUnits) return;
-        Apply(_session.SendUnit(UnitType.Rapide));
+        var res = _session.SendUnit(UnitType.Rapide);
+        if (res.IsSuccess) _analyzer.RecordUnitSent(UnitType.Rapide);
+        Apply(res);
         BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitType.Rapide);
     }
 
     private void ExecuteSendTireurElite()
     {
         if (!CanSendUnits) return;
-        Apply(_session.SendUnit(UnitType.TireurElite));
+        var res = _session.SendUnit(UnitType.TireurElite);
+        if (res.IsSuccess) _analyzer.RecordUnitSent(UnitType.TireurElite);
+        Apply(res);
         BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitType.TireurElite);
     }
 
     private void ExecuteSendTank()
     {
         if (!CanSendUnits) return;
-        Apply(_session.SendUnit(UnitType.Tank));
+        var res = _session.SendUnit(UnitType.Tank);
+        if (res.IsSuccess) _analyzer.RecordUnitSent(UnitType.Tank);
+        Apply(res);
         BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitType.Tank);
     }
 
@@ -609,7 +633,9 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         if (_movingTowerFrom == null)
         {
-            Apply(_session.PlaceTower(CurrentTowerType, position));
+            var res = _session.PlaceTower(CurrentTowerType, position);
+            if (res.IsSuccess) _analyzer.RecordTowerPlaced(CurrentTowerType);
+            Apply(res);
             BroadcastAction(PlayerActionKind.PlaceTower, towerType: (int)CurrentTowerType, x: position.X, y: position.Y);
         }
         
@@ -626,9 +652,11 @@ public sealed class MainWindowViewModel : ViewModelBase
             return;
         }
 
+        var existingTower = Snapshot.Simulation.Towers.FirstOrDefault(t => t.Position.X == position.X && t.Position.Y == position.Y);
         var result = _session.SellTower(position);
         if (result.IsSuccess)
         {
+            if (existingTower != default) _analyzer.RecordTowerSold(existingTower.Type);
             BroadcastAction(PlayerActionKind.SellTower, x: position.X, y: position.Y);
             Apply(result);
         }
@@ -674,6 +702,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         _totalTicksProcessed = 0;
         Snapshot = _session.State;
         IsGameStarted = true;
+        _analyzer.Reset(_session.State.Config.StartingGold.Value);
     }
 
     private void ExecuteReplay()
@@ -692,6 +721,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
         _session = CreateSession();
         Snapshot = _session.State;
+        _analyzer.Reset(_session.State.Config.StartingGold.Value);
     }
 
     private void ExecuteQuit()
@@ -710,13 +740,19 @@ public sealed class MainWindowViewModel : ViewModelBase
                 case PlayerActionKind.PlaceTower:
                     if (action.TowerType.HasValue && action.X.HasValue && action.Y.HasValue)
                     {
-                        Apply(_session.PlaceTower((TowerType)action.TowerType.Value, new GridPosition(action.X.Value, action.Y.Value)));
+                        var towerType = (TowerType)action.TowerType.Value;
+                        var res = _session.PlaceTower(towerType, new GridPosition(action.X.Value, action.Y.Value));
+                        if (res.IsSuccess) _analyzer.RecordTowerPlaced(towerType);
+                        Apply(res);
                     }
                     break;
                 case PlayerActionKind.SendWave:
                     if (action.UnitType.HasValue)
                     {
-                        Apply(_session.SendUnit((UnitType)action.UnitType.Value));
+                        var unitType = (UnitType)action.UnitType.Value;
+                        var res = _session.SendUnit(unitType);
+                        if (res.IsSuccess) _analyzer.RecordUnitSent(unitType);
+                        Apply(res);
                     }
                     break;
                 case PlayerActionKind.MoveTower:
@@ -733,11 +769,33 @@ public sealed class MainWindowViewModel : ViewModelBase
                 case PlayerActionKind.SellTower:
                     if (action.X.HasValue && action.Y.HasValue)
                     {
-                        Apply(_session.SellTower(new GridPosition(action.X.Value, action.Y.Value)));
+                        var pos = new GridPosition(action.X.Value, action.Y.Value);
+                        var existingTower = Snapshot.Simulation.Towers.FirstOrDefault(t => t.Position.X == pos.X && t.Position.Y == pos.Y);
+                        var res = _session.SellTower(pos);
+                        if (res.IsSuccess && existingTower != default)
+                        {
+                            _analyzer.RecordTowerSold(existingTower.Type);
+                        }
+                        Apply(res);
                     }
                     break;
             }
         });
+    }
+
+    private void OnGameEnded()
+    {
+        _analyzer.RecordEndState(
+            CanPlaceTower ? Snapshot.DefenderGold.Value : Snapshot.AttackerBudget.Value,
+            Snapshot.Simulation.BaseHealth.Value,
+            Snapshot.WaveNumber
+        );
+
+        _balancingSuggestions.Clear();
+        foreach (var suggestion in _analyzer.GenerateSuggestions())
+        {
+            _balancingSuggestions.Add(suggestion);
+        }
     }
 
     private void BroadcastAction(PlayerActionKind kind, int? towerType = null, int? x = null, int? y = null, int? unitType = null, int? oldX = null, int? oldY = null)
