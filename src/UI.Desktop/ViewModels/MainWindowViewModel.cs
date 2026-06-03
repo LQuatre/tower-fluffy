@@ -62,6 +62,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         JoinSpecificGameCommand = ReactiveCommand.CreateFromTask<string>(ExecuteJoinSpecificGame);
         StartSoloCommand = ReactiveCommand.Create(ExecuteStartSolo);
         ReplayCommand = ReactiveCommand.Create(ExecuteReplay);
+        QuitCommand = ReactiveCommand.Create(ExecuteQuit);
 
         // Connexion automatique au démarrage
         Task.Run(async () => await ExecuteConnect());
@@ -281,6 +282,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     public ReactiveCommand<string, Unit> JoinSpecificGameCommand { get; }
     public ReactiveCommand<Unit, Unit> StartSoloCommand { get; }
     public ReactiveCommand<Unit, Unit> ReplayCommand { get; }
+    public ReactiveCommand<Unit, Unit> QuitCommand { get; }
 
     public void Tick()
     {
@@ -475,10 +477,22 @@ public sealed class MainWindowViewModel : ViewModelBase
                 _availableGames.Clear();
                 foreach (var g in games) _availableGames.Add(g);
             });
-            _networkClient.OnRoleReceived += (role) => Avalonia.Threading.Dispatcher.UIThread.Post(() => {
-                SelectedRole = (PlayerRole)role;
-            });
-            
+            _networkClient.OnRoleReceived += role => {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                    SelectedRole = (PlayerRole)role;
+                });
+            };
+
+            _networkClient.OnRoomClosed += () => {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                    if (IsInGameRoom)
+                    {
+                        ExecuteReplay();
+                        LastError = "Le salon a été fermé.";
+                    }
+                });
+            };
+
             await _networkClient.StartAsync();
             IsConnected = true;
             
@@ -525,12 +539,28 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private void ExecuteReplay()
     {
+        if (_networkClient != null && IsConnected)
+        {
+            Task.Run(async () => await _networkClient.LeaveGame());
+        }
+
         IsGameStarted = false;
         IsInGameRoom = false;
         IsReady = false;
         IsOpponentReady = false;
         _gameStartTime = null;
         _totalTicksProcessed = 0;
+        
+        _session = GameSession.CreateMvp();
+        Snapshot = _session.Snapshot;
+    }
+
+    private void ExecuteQuit()
+    {
+        if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.Shutdown();
+        }
     }
 
     private void HandleNetworkAction(PlayerAction action)

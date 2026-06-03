@@ -341,5 +341,35 @@
                 </Grid>
             </Border>
         </Grid>
+
+        <!-- OVERLAY DE FIN DE PARTIE -->
+        <Border IsVisible="{Binding IsGameFinished}" ZIndex="300">
+            <Border.Background>
+                <SolidColorBrush Color="#E6050814" />
+            </Border.Background>
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="40">
+                <TextBlock Text="FIN DE MISSION" Foreground="White" FontSize="20" FontWeight="Bold" LetterSpacing="5" HorizontalAlignment="Center" Opacity="0.7" />
+                
+                <TextBlock Text="{Binding GameResultMessage}" Foreground="{Binding GameResultColor}" FontSize="56" FontWeight="Black" LetterSpacing="3" HorizontalAlignment="Center">
+                    <TextBlock.Effect>
+                        <DropShadowEffect Color="{Binding GameResultColor}" BlurRadius="30" Opacity="0.4" OffsetX="0" OffsetY="0" />
+                    </TextBlock.Effect>
+                </TextBlock>
+
+                <StackPanel Orientation="Horizontal" Spacing="30" HorizontalAlignment="Center" Margin="0,30,0,0">
+                    <Button Command="{Binding ReplayCommand}" 
+                            Classes="Flat" Background="{StaticResource AccentBrush}" Foreground="White" 
+                            Height="60" Padding="40,0" CornerRadius="12" Cursor="Hand">
+                        <TextBlock Text="REJOUER (MENU)" FontWeight="Black" FontSize="18" LetterSpacing="2" />
+                    </Button>
+                    <Button Command="{Binding QuitCommand}" 
+                            Background="#1AFFFFFF" BorderBrush="#30FFFFFF" BorderThickness="1" Foreground="White" 
+                            Height="60" Padding="40,0" CornerRadius="12" Cursor="Hand">
+                        <TextBlock Text="QUITTER" FontWeight="Bold" FontSize="18" LetterSpacing="2" />
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
     </Grid>
 </suki:SukiWindow>

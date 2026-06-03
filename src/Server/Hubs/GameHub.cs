@@ -62,6 +62,34 @@ public class GameHub : Hub<IGameClient>, IGameHub
         await NotifyGameListChanged();
     }
 
+    public async Task LeaveGame()
+    {
+        if (_playerToGame.TryGetValue(Context.ConnectionId, out var gameId))
+        {
+            await CloseRoom(gameId);
+        }
+    }
+
+    private async Task CloseRoom(string gameId)
+    {
+        if (_games.TryRemove(gameId, out var players))
+        {
+            _gameStarted.TryRemove(gameId, out _);
+            lock(players)
+            {
+                foreach(var p in players)
+                {
+                    _playerToGame.TryRemove(p, out _);
+                    _playerReady.TryRemove(p, out _);
+                    _playerRoles.TryRemove(p, out _);
+                    Groups.RemoveFromGroupAsync(p, gameId);
+                }
+            }
+            await Clients.Group(gameId).ReceiveRoomClosed();
+            await NotifyGameListChanged();
+        }
+    }
+
     public async Task GetActiveGames()
     {
         var games = _games.Select(g => new GameInfoDto(g.Key, g.Value.Count, _gameStarted.GetValueOrDefault(g.Key, false))).ToList();
@@ -114,23 +142,14 @@ public class GameHub : Hub<IGameClient>, IGameHub
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        _playerReady.TryRemove(Context.ConnectionId, out _);
-        _playerRoles.TryRemove(Context.ConnectionId, out _);
-        
-        if (_playerToGame.TryRemove(Context.ConnectionId, out var gameId))
+        if (_playerToGame.TryGetValue(Context.ConnectionId, out var gameId))
         {
-            if (_games.TryGetValue(gameId, out var players))
-            {
-                lock(players)
-                {
-                    players.Remove(Context.ConnectionId);
-                    if (players.Count == 0)
-                    {
-                        _games.TryRemove(gameId, out _);
-                        _gameStarted.TryRemove(gameId, out _);
-                    }
-                }
-            }
+            await CloseRoom(gameId);
+        }
+        else
+        {
+            _playerReady.TryRemove(Context.ConnectionId, out _);
+            _playerRoles.TryRemove(Context.ConnectionId, out _);
         }
 
         await base.OnDisconnectedAsync(exception);
