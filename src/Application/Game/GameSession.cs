@@ -1,7 +1,5 @@
 using System;
-using TowerFluffy.Application.Game.Dtos.Combat;
-using TowerFluffy.Application.Game.Dtos.Environment;
-using TowerFluffy.Application.Game.Dtos.Match;
+using System.Collections.Generic;
 using TowerFluffy.Domain.Match;
 using TowerFluffy.Domain.Shared;
 using TowerFluffy.Domain.Combat;
@@ -31,7 +29,7 @@ public sealed class GameSession
         return new GameSession(config, map, finalSeed);
     }
 
-    public GameSnapshotDto Snapshot => GameSnapshotMapper.ToDto(_state);
+    public MatchState State => _state;
 
     public void Reset() => _state = MatchState.CreateNew(_config, _map);
 
@@ -72,35 +70,27 @@ public sealed class GameSession
         return Apply(result);
     }
 
-    public CommandResult PlaceTower(TowerTypeDto type, GridPositionDto position)
+    public CommandResult PlaceTower(TowerType type, GridPosition position)
     {
-        var domainType = (TowerType)type;
-        var domainPosition = new GridPosition(position.X, position.Y);
-
-        var result = _state.PlaceTower(domainType, domainPosition);
+        var result = _state.PlaceTower(type, position);
         return Apply(result);
     }
 
-    public CommandResult MoveTower(GridPositionDto oldPos, GridPositionDto newPos)
+    public CommandResult MoveTower(GridPosition oldPos, GridPosition newPos)
     {
-        var domainOld = new GridPosition(oldPos.X, oldPos.Y);
-        var domainNew = new GridPosition(newPos.X, newPos.Y);
-
-        var result = _state.MoveTower(domainOld, domainNew);
+        var result = _state.MoveTower(oldPos, newPos);
         return Apply(result);
     }
 
-    public CommandResult SellTower(GridPositionDto position)
+    public CommandResult SellTower(GridPosition position)
     {
-        var domainPosition = new GridPosition(position.X, position.Y);
-        var result = _state.SellTower(domainPosition);
+        var result = _state.SellTower(position);
         return Apply(result);
     }
 
-    public CommandResult SendUnit(UnitTypeDto type)
+    public CommandResult SendUnit(UnitType type)
     {
-        var domainType = (UnitType)type;
-        var result = _state.SendUnit(domainType);
+        var result = _state.SendUnit(type);
         return Apply(result);
     }
 

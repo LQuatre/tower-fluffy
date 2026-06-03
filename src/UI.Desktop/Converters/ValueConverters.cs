@@ -2,7 +2,7 @@ using System;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
 using System.Globalization;
-using TowerFluffy.Application.Game.Dtos.Combat;
+using TowerFluffy.Domain.Combat;
 
 namespace TowerFluffy.UI.Desktop.Converters;
 
@@ -38,7 +38,7 @@ public class TowerTypeToBrushConverter : IValueConverter
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is TowerTypeDto currentType && parameter is string targetTypeStr)
+        if (value is TowerType currentType && parameter is string targetTypeStr)
         {
             if (currentType.ToString() == targetTypeStr)
             {

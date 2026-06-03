@@ -1,13 +1,10 @@
 using TowerFluffy.Application.Game;
-using TowerFluffy.Application.Game.Dtos;
-using TowerFluffy.Application.Game.Dtos.Combat;
-using TowerFluffy.Application.Game.Dtos.Environment;
-using TowerFluffy.Application.Game.Dtos.Match;
 using TowerFluffy.Domain.Combat;
 using TowerFluffy.Domain.Shared;
 using TowerFluffy.Domain.Match;
 using TowerFluffy.Domain.Engine;
 using TowerFluffy.Domain.Environment;
+using System;
 using Xunit;
 
 namespace TowerFluffy.Application.Tests;
@@ -19,8 +16,8 @@ public sealed class GameSessionTests
     {
         var session = new GameSession(CreateTestConfig(), DefaultMapFactory.Create());
 
-        Assert.Equal(MatchPhaseDto.Preparation, session.Snapshot.Hud.Phase);
-        Assert.Equal(0, session.Snapshot.Hud.WaveNumber);
+        Assert.Equal(MatchPhase.Preparation, session.State.Phase);
+        Assert.Equal(0, session.State.WaveNumber);
     }
 
     [Fact]
@@ -31,8 +28,8 @@ public sealed class GameSessionTests
         var result = session.SkipPreparation();
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(MatchPhaseDto.Wave, session.Snapshot.Hud.Phase);
-        Assert.Equal(1, session.Snapshot.Hud.WaveNumber);
+        Assert.Equal(MatchPhase.Wave, session.State.Phase);
+        Assert.Equal(1, session.State.WaveNumber);
     }
 
     [Fact]
@@ -40,32 +37,35 @@ public sealed class GameSessionTests
     {
         var session = new GameSession(CreateTestConfig(), DefaultMapFactory.Create());
 
-        var result = session.PlaceTower(TowerTypeDto.BasicShooter, new GridPositionDto(0, 0));
+        var result = session.PlaceTower(TowerType.BasicShooter, new GridPosition(0, 0));
 
         Assert.True(result.IsSuccess);
-        Assert.Single(session.Snapshot.Towers);
+        Assert.Single(session.State.Simulation.Towers);
     }
 
     [Fact]
     public void Tick_WhenTowerShootsUnit_SnapshotIncludesCombatEvent()
     {
-        var session = new GameSession(CreateTestConfig(), DefaultMapFactory.Create());
+        var path = new TowerFluffy.Domain.Environment.Path(new[] { new WorldPosition(20, 220), new WorldPosition(200, 220) });
+        var grid = new Grid(Width: 16, Height: 10, CellSize: 40);
+        var map = new Map(path, grid, blockedCells: Array.Empty<GridPosition>());
+        var session = new GameSession(CreateTestConfig(), map);
 
-        Assert.True(session.PlaceTower(TowerTypeDto.BasicShooter, new GridPositionDto(0, 4)).IsSuccess);
+        Assert.True(session.PlaceTower(TowerType.BasicShooter, new GridPosition(0, 4)).IsSuccess);
         Assert.True(session.SkipPreparation().IsSuccess);
-        Assert.True(session.SendUnit(UnitTypeDto.Soldat).IsSuccess);
+        Assert.True(session.SendUnit(UnitType.Soldat).IsSuccess);
 
         session.Tick(1);
 
-        Assert.Equal(1, session.Snapshot.Hud.Tick);
-        Assert.Single(session.Snapshot.CombatEvents);
+        Assert.Equal(1, session.State.Tick.Value);
+        Assert.Single(session.State.LastCombatEvents);
 
-        var e = session.Snapshot.CombatEvents[0];
-        Assert.Equal(1, e.Tick);
-        Assert.Equal(CombatEventKindDto.TowerShot, e.Kind);
-        Assert.Equal(new WorldPositionDto(20, 180), e.From);
-        Assert.Equal(new WorldPositionDto(20, 220), e.To);
-        Assert.Equal(1, e.Damage);
+        var e = session.State.LastCombatEvents[0];
+        Assert.Equal(new Tick(1), e.Tick);
+        Assert.Equal(CombatEventKind.TowerShot, e.Kind);
+        Assert.Equal(new WorldPosition(20, 180), e.From);
+        Assert.Equal(new WorldPosition(20, 220), e.To);
+        Assert.Equal(new Damage(1), e.Damage);
         Assert.True(e.TargetDestroyed);
     }
 

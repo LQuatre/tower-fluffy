@@ -6,9 +6,10 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
-using TowerFluffy.Application.Game.Dtos.Combat;
-using TowerFluffy.Application.Game.Dtos.Environment;
-using TowerFluffy.Application.Game.Dtos.Match;
+using TowerFluffy.Domain.Combat;
+using TowerFluffy.Domain.Environment;
+using TowerFluffy.Domain.Match;
+using TowerFluffy.Domain.Shared;
 
 namespace TowerFluffy.UI.Desktop.Controls;
 
@@ -17,8 +18,8 @@ public sealed class GameBoardControl : Control
     private const int LineTtlTicks = 3;
     private const int PulseTtlTicks = 6;
 
-    public static readonly StyledProperty<GameSnapshotDto?> SnapshotProperty =
-        AvaloniaProperty.Register<GameBoardControl, GameSnapshotDto?>(nameof(Snapshot));
+    public static readonly StyledProperty<MatchState?> SnapshotProperty =
+        AvaloniaProperty.Register<GameBoardControl, MatchState?>(nameof(Snapshot));
 
     public static readonly StyledProperty<ICommand?> PlaceTowerCommandProperty =
         AvaloniaProperty.Register<GameBoardControl, ICommand?>(nameof(PlaceTowerCommand));
@@ -26,7 +27,13 @@ public sealed class GameBoardControl : Control
     public static readonly StyledProperty<ICommand?> SellTowerCommandProperty =
         AvaloniaProperty.Register<GameBoardControl, ICommand?>(nameof(SellTowerCommand));
 
-    public GameSnapshotDto? Snapshot
+    public static readonly StyledProperty<TowerType> SelectedTowerTypeProperty =
+        AvaloniaProperty.Register<GameBoardControl, TowerType>(nameof(SelectedTowerType), defaultValue: TowerType.BasicShooter);
+
+    public static readonly StyledProperty<bool> IsPlacementModeProperty =
+        AvaloniaProperty.Register<GameBoardControl, bool>(nameof(IsPlacementMode), defaultValue: false);
+
+    public MatchState? Snapshot
     {
         get => GetValue(SnapshotProperty);
         set => SetValue(SnapshotProperty, value);
@@ -44,8 +51,21 @@ public sealed class GameBoardControl : Control
         set => SetValue(SellTowerCommandProperty, value);
     }
 
+    public TowerType SelectedTowerType
+    {
+        get => GetValue(SelectedTowerTypeProperty);
+        set => SetValue(SelectedTowerTypeProperty, value);
+    }
+
+    public bool IsPlacementMode
+    {
+        get => GetValue(IsPlacementModeProperty);
+        set => SetValue(IsPlacementModeProperty, value);
+    }
+
     private readonly List<LineEffect> _lineEffects = new();
     private readonly List<PulseEffect> _pulseEffects = new();
+    private GridPosition? _hoveredCell;
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
@@ -53,7 +73,7 @@ public sealed class GameBoardControl : Control
 
         if (change.Property == SnapshotProperty)
         {
-            if (change.NewValue is GameSnapshotDto snapshot)
+            if (change.NewValue is MatchState snapshot)
             {
                 UpdateCombatEffects(snapshot);
             }
@@ -70,7 +90,7 @@ public sealed class GameBoardControl : Control
             return new Size(640, 400);
         }
 
-        return new Size(snapshot.Map.Width * snapshot.Map.CellSize, snapshot.Map.Height * snapshot.Map.CellSize);
+        return new Size(snapshot.Map.Grid.Width * snapshot.Map.Grid.CellSize, snapshot.Map.Grid.Height * snapshot.Map.Grid.CellSize);
     }
 
     public override void Render(DrawingContext context)
@@ -83,9 +103,9 @@ public sealed class GameBoardControl : Control
             return;
         }
 
-        var cellSize = snapshot.Map.CellSize;
-        var boardWidth = snapshot.Map.Width * cellSize;
-        var boardHeight = snapshot.Map.Height * cellSize;
+        var cellSize = snapshot.Map.Grid.CellSize;
+        var boardWidth = snapshot.Map.Grid.Width * cellSize;
+        var boardHeight = snapshot.Map.Grid.Height * cellSize;
 
         var boardRect = new Rect(0, 0, boardWidth, boardHeight);
 
@@ -105,6 +125,7 @@ public sealed class GameBoardControl : Control
         RenderTowers(context, snapshot, defenderBrush, cellSize);
         RenderUnits(context, snapshot, attackerBrush, cellSize);
         RenderCombatEffects(context, snapshot, defenderBrush, attackerBrush, cellSize);
+        RenderHoverAndRange(context, snapshot, cellSize);
     }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
@@ -115,15 +136,14 @@ public sealed class GameBoardControl : Control
         if (snapshot is null) return;
 
         var point = e.GetPosition(this);
-        var cellSize = snapshot.Map.CellSize;
+        var cellSize = snapshot.Map.Grid.CellSize;
         if (cellSize <= 0) return;
 
         var cellX = (int)(point.X / cellSize);
         var cellY = (int)(point.Y / cellSize);
-        var cell = new GridPositionDto(cellX, cellY);
+        var cell = new GridPosition(cellX, cellY);
 
-        // On ne déclenche le "Pressed" que s'il y a une tour à ramasser
-        var hasTower = snapshot.Towers.Any(t => t.Cell.X == cellX && t.Cell.Y == cellY);
+        var hasTower = snapshot.Simulation.Towers.Any(t => t.Position.X == cellX && t.Position.Y == cellY);
 
         if (e.ClickCount == 2)
         {
@@ -150,31 +170,54 @@ public sealed class GameBoardControl : Control
         if (snapshot is null) return;
 
         var point = e.GetPosition(this);
-        var cellSize = snapshot.Map.CellSize;
+        var cellSize = snapshot.Map.Grid.CellSize;
         if (cellSize <= 0) return;
 
         var cellX = (int)(point.X / cellSize);
         var cellY = (int)(point.Y / cellSize);
-        var cell = new GridPositionDto(cellX, cellY);
+        var cell = new GridPosition(cellX, cellY);
 
         var command = PlaceTowerCommand;
         if (command != null && command.CanExecute(cell))
         {
-            // On envoie le signal de relâchement (pour poser la tour)
             command.Execute(cell);
             InvalidateVisual();
         }
     }
 
-    private IBrush? TryGetThemeBrush(string key)
+    protected override void OnPointerMoved(PointerEventArgs e)
     {
-        var current = Avalonia.Application.Current;
-        if (current?.TryFindResource(key, current.ActualThemeVariant, out var value) == true)
-        {
-            return value as IBrush;
-        }
+        base.OnPointerMoved(e);
+        var snapshot = Snapshot;
+        if (snapshot is null) return;
 
-        return null;
+        var point = e.GetPosition(this);
+        var cellSize = snapshot.Map.Grid.CellSize;
+        if (cellSize <= 0) return;
+
+        var cellX = (int)(point.X / cellSize);
+        var cellY = (int)(point.Y / cellSize);
+
+        // Clamp inside map grid bounds
+        cellX = Math.Clamp(cellX, 0, snapshot.Map.Grid.Width - 1);
+        cellY = Math.Clamp(cellY, 0, snapshot.Map.Grid.Height - 1);
+
+        var newCell = new GridPosition(cellX, cellY);
+        if (_hoveredCell != newCell)
+        {
+            _hoveredCell = newCell;
+            InvalidateVisual();
+        }
+    }
+
+    protected override void OnPointerExited(PointerEventArgs e)
+    {
+        base.OnPointerExited(e);
+        if (_hoveredCell != null)
+        {
+            _hoveredCell = null;
+            InvalidateVisual();
+        }
     }
 
     private static void RenderBoard(DrawingContext context, Rect boardRect, IBrush background)
@@ -182,29 +225,29 @@ public sealed class GameBoardControl : Control
         context.DrawRectangle(background, pen: null, boardRect);
     }
 
-    private static void RenderGrid(DrawingContext context, GameSnapshotDto snapshot, Pen gridPen)
+    private static void RenderGrid(DrawingContext context, MatchState snapshot, Pen gridPen)
     {
-        var cellSize = snapshot.Map.CellSize;
+        var cellSize = snapshot.Map.Grid.CellSize;
 
-        var boardWidth = snapshot.Map.Width * cellSize;
-        var boardHeight = snapshot.Map.Height * cellSize;
+        var boardWidth = snapshot.Map.Grid.Width * cellSize;
+        var boardHeight = snapshot.Map.Grid.Height * cellSize;
 
-        for (var x = 0; x <= snapshot.Map.Width; x++)
+        for (var x = 0; x <= snapshot.Map.Grid.Width; x++)
         {
             var xPixel = x * cellSize;
             context.DrawLine(gridPen, new Point(xPixel, 0), new Point(xPixel, boardHeight));
         }
 
-        for (var y = 0; y <= snapshot.Map.Height; y++)
+        for (var y = 0; y <= snapshot.Map.Grid.Height; y++)
         {
             var yPixel = y * cellSize;
             context.DrawLine(gridPen, new Point(0, yPixel), new Point(boardWidth, yPixel));
         }
     }
 
-    private static void RenderPath(DrawingContext context, GameSnapshotDto snapshot, Color pathColor, int cellSize)
+    private static void RenderPath(DrawingContext context, MatchState snapshot, Color pathColor, int cellSize)
     {
-        if (snapshot.Map.Waypoints.Count < 2)
+        if (snapshot.Map.Path.Waypoints.Count < 2)
         {
             return;
         }
@@ -221,29 +264,20 @@ public sealed class GameBoardControl : Control
             DashStyle = new DashStyle(new[] { 4.0, 6.0 }, offset: 0),
         };
 
-        for (var i = 0; i < snapshot.Map.Waypoints.Count - 1; i++)
+        for (var i = 0; i < snapshot.Map.Path.Waypoints.Count - 1; i++)
         {
-            var p1 = new Point(snapshot.Map.Waypoints[i].X, snapshot.Map.Waypoints[i].Y);
-            var p2 = new Point(snapshot.Map.Waypoints[i + 1].X, snapshot.Map.Waypoints[i + 1].Y);
+            var p1 = new Point(snapshot.Map.Path.Waypoints[i].X, snapshot.Map.Path.Waypoints[i].Y);
+            var p2 = new Point(snapshot.Map.Path.Waypoints[i + 1].X, snapshot.Map.Path.Waypoints[i + 1].Y);
 
             context.DrawLine(pathPen, p1, p2);
             context.DrawLine(centerPen, p1, p2);
         }
 
-        var start = new Point(snapshot.Map.Waypoints[0].X, snapshot.Map.Waypoints[0].Y);
-        var end = new Point(snapshot.Map.Waypoints[^1].X, snapshot.Map.Waypoints[^1].Y);
+        var start = new Point(snapshot.Map.Path.Waypoints[0].X, snapshot.Map.Path.Waypoints[0].Y);
+        var end = new Point(snapshot.Map.Path.Waypoints[^1].X, snapshot.Map.Path.Waypoints[^1].Y);
 
         DrawEndpointMarker(context, start, new SolidColorBrush(Color.Parse("#FF2E2E")), size: cellSize * 0.2);
         DrawEndpointMarker(context, end, new SolidColorBrush(Color.Parse("#00FF94")), size: cellSize * 0.3);
-    }
-
-    private static void DrawHatch(DrawingContext context, Rect rect, Pen pen)
-    {
-        var inset = Math.Max(2, rect.Width * 0.12);
-        var inner = rect.Deflate(inset);
-
-        context.DrawLine(pen, new Point(inner.Left, inner.Top), new Point(inner.Right, inner.Bottom));
-        context.DrawLine(pen, new Point(inner.Right, inner.Top), new Point(inner.Left, inner.Bottom));
     }
 
     private static void DrawEndpointMarker(DrawingContext context, Point center, IBrush stroke, double size)
@@ -257,60 +291,55 @@ public sealed class GameBoardControl : Control
 
     private static void RenderTowers(
         DrawingContext context,
-        GameSnapshotDto snapshot,
+        MatchState snapshot,
         ISolidColorBrush brush,
         int cellSize)
     {
-        var glowBrush = new SolidColorBrush(brush.Color, opacity: 0.2);
-        var strongPen = new Pen(brush, thickness: 2);
-
-        foreach (var tower in snapshot.Towers)
+        foreach (var tower in snapshot.Simulation.Towers)
         {
             var towerBrush = tower.Type switch
             {
-                TowerTypeDto.BasicShooter => brush, // Default defender color
-                TowerTypeDto.Flamethrower => new SolidColorBrush(Color.Parse("#FF4500")), // OrangeRed
-                TowerTypeDto.Sniper => new SolidColorBrush(Color.Parse("#FFD700")), // Gold
-                TowerTypeDto.Cannon => new SolidColorBrush(Color.Parse("#8A2BE2")), // BlueViolet
-                TowerTypeDto.Laser => new SolidColorBrush(Color.Parse("#00FF7F")), // SpringGreen
+                TowerType.BasicShooter => brush,
+                TowerType.Flamethrower => new SolidColorBrush(Color.Parse("#FF4500")),
+                TowerType.Sniper => new SolidColorBrush(Color.Parse("#FFD700")),
+                TowerType.Cannon => new SolidColorBrush(Color.Parse("#8A2BE2")),
+                TowerType.Laser => new SolidColorBrush(Color.Parse("#00FF7F")),
                 _ => brush
             };
             var towerGlowBrush = new SolidColorBrush(towerBrush.Color, opacity: 0.2);
             var towerStrongPen = new Pen(towerBrush, thickness: 2);
 
-            var cellRect = new Rect(tower.Cell.X * cellSize, tower.Cell.Y * cellSize, cellSize, cellSize);
+            var cellRect = new Rect(tower.Position.X * cellSize, tower.Position.Y * cellSize, cellSize, cellSize);
             var inset = cellSize * 0.2;
             var outer = cellRect.Deflate(inset);
 
-            // Glow
             context.DrawEllipse(towerGlowBrush, null, outer.Center, outer.Width * 0.8, outer.Height * 0.8);
 
             var geometry = CreateCutCornerRectGeometry(outer, cut: cellSize * 0.15);
             context.DrawGeometry(new SolidColorBrush(towerBrush.Color, 0.1), towerStrongPen, geometry);
 
-            // Core
             var coreRadius = cellSize * 0.1;
             context.DrawEllipse(towerBrush, null, outer.Center, coreRadius, coreRadius);
 
-            DrawHealthBar(context, tower.Health, GetMaxHealth(tower.Type), new Point(outer.Left, outer.Top - 8), towerBrush, outer.Width);
+            DrawHealthBar(context, tower.Health.Value, GetMaxHealth(tower.Type), new Point(outer.Left, outer.Top - 8), towerBrush, outer.Width);
         }
     }
 
     private static void RenderUnits(
         DrawingContext context,
-        GameSnapshotDto snapshot,
+        MatchState snapshot,
         ISolidColorBrush brush,
         int cellSize)
     {
-        foreach (var unit in snapshot.Units)
+        foreach (var unit in snapshot.Simulation.Units)
         {
             var unitBrush = unit.Type switch
             {
-                UnitTypeDto.Soldat => brush, // Default attacker color
-                UnitTypeDto.Brute => new SolidColorBrush(Color.Parse("#FF8C00")), // DarkOrange
-                UnitTypeDto.Rapide => new SolidColorBrush(Color.Parse("#FF1493")), // DeepPink
-                UnitTypeDto.TireurElite => new SolidColorBrush(Color.Parse("#4169E1")), // RoyalBlue
-                UnitTypeDto.Tank => new SolidColorBrush(Color.Parse("#8B0000")), // DarkRed
+                UnitType.Soldat => brush,
+                UnitType.Brute => new SolidColorBrush(Color.Parse("#FF8C00")),
+                UnitType.Rapide => new SolidColorBrush(Color.Parse("#FF1493")),
+                UnitType.TireurElite => new SolidColorBrush(Color.Parse("#4169E1")),
+                UnitType.Tank => new SolidColorBrush(Color.Parse("#8B0000")),
                 _ => brush
             };
             
@@ -318,8 +347,12 @@ public sealed class GameBoardControl : Control
             var trailBrush = new SolidColorBrush(unitBrush.Color, opacity: 0.3);
             var trailPen = new Pen(trailBrush, thickness: 2) { LineCap = PenLineCap.Round };
 
-            var center = new Point(unit.Position.X, unit.Position.Y);
-            var direction = new Vector(unit.Direction.X, unit.Direction.Y);
+            // Récupérer la position et la direction calculées par le chemin du Domain
+            var unitPos = snapshot.Map.Path.GetPositionAtDistance(unit.DistanceAlongPath);
+            var unitDir = snapshot.Map.Path.GetDirectionAtDistance(unit.DistanceAlongPath);
+
+            var center = new Point(unitPos.X, unitPos.Y);
+            var direction = new Vector(unitDir.X, unitDir.Y);
             var radius = cellSize * 0.15;
 
             DrawTrail(context, center, direction, trailPen, length: radius * 2.5);
@@ -327,7 +360,7 @@ public sealed class GameBoardControl : Control
             var unitGeometry = CreateArrowGeometry(center, radius, direction);
             context.DrawGeometry(new SolidColorBrush(unitBrush.Color, 0.2), strongPen, unitGeometry);
 
-            DrawHealthBar(context, unit.Health, GetMaxHealth(unit.Type), new Point(center.X - radius, center.Y - radius - 8), unitBrush, radius * 2);
+            DrawHealthBar(context, unit.Health.Value, GetMaxHealth(unit.Type), new Point(center.X - radius, center.Y - radius - 8), unitBrush, radius * 2);
         }
     }
 
@@ -341,26 +374,6 @@ public sealed class GameBoardControl : Control
 
         var back = new Point(center.X - (direction.X * length), center.Y - (direction.Y * length));
         context.DrawLine(pen, back, center);
-    }
-
-    private static Vector GetDominantPathDirection(GameSnapshotDto snapshot)
-    {
-        if (snapshot.Map.Waypoints.Count < 2)
-        {
-            return new Vector(1, 0);
-        }
-
-        var start = snapshot.Map.Waypoints[0];
-        var end = snapshot.Map.Waypoints[^1];
-        var dx = end.X - start.X;
-        var dy = end.Y - start.Y;
-
-        if (Math.Abs(dx) >= Math.Abs(dy))
-        {
-            return new Vector(Math.Sign(dx), 0);
-        }
-
-        return new Vector(0, Math.Sign(dy));
     }
 
     private static Geometry CreateCutCornerRectGeometry(Rect rect, double cut)
@@ -408,23 +421,23 @@ public sealed class GameBoardControl : Control
         return geometry;
     }
 
-    private static int GetMaxHealth(TowerTypeDto type) => type switch
+    private static int GetMaxHealth(TowerType type) => type switch
     {
-        TowerTypeDto.BasicShooter => 100,
-        TowerTypeDto.Flamethrower => 120,
-        TowerTypeDto.Sniper => 80,
-        TowerTypeDto.Cannon => 150,
-        TowerTypeDto.Laser => 150,
+        TowerType.BasicShooter => 100,
+        TowerType.Flamethrower => 120,
+        TowerType.Sniper => 80,
+        TowerType.Cannon => 150,
+        TowerType.Laser => 150,
         _ => 100
     };
 
-    private static int GetMaxHealth(UnitTypeDto type) => type switch
+    private static int GetMaxHealth(UnitType type) => type switch
     {
-        UnitTypeDto.Soldat => 20,
-        UnitTypeDto.Brute => 80,
-        UnitTypeDto.Rapide => 15,
-        UnitTypeDto.TireurElite => 30,
-        UnitTypeDto.Tank => 300,
+        UnitType.Soldat => 20,
+        UnitType.Brute => 80,
+        UnitType.Rapide => 15,
+        UnitType.TireurElite => 30,
+        UnitType.Tank => 300,
         _ => 20
     };
 
@@ -456,9 +469,9 @@ public sealed class GameBoardControl : Control
         return Brushes.Transparent;
     }
 
-    private void UpdateCombatEffects(GameSnapshotDto snapshot)
+    private void UpdateCombatEffects(MatchState snapshot)
     {
-        var currentTick = snapshot.Hud.Tick;
+        var currentTick = snapshot.Simulation.Tick.Value;
         if (currentTick < 0)
         {
             _lineEffects.Clear();
@@ -469,27 +482,27 @@ public sealed class GameBoardControl : Control
         _lineEffects.RemoveAll(e => (currentTick - e.SpawnTick) >= e.Ttl);
         _pulseEffects.RemoveAll(e => (currentTick - e.SpawnTick) >= PulseTtlTicks);
 
-        foreach (var e in snapshot.CombatEvents)
+        foreach (var e in snapshot.LastCombatEvents)
         {
             var from = new Point(e.From.X, e.From.Y);
             var to = new Point(e.To.X, e.To.Y);
             var isKill = e.TargetDestroyed;
             var sourceType = e.SourceTowerType;
-            var ttl = sourceType == TowerTypeDto.Flamethrower ? 8 : LineTtlTicks;
-            var isAttacker = e.Kind == CombatEventKindDto.UnitAttackTower || e.Kind == CombatEventKindDto.UnitHitBase;
-            _lineEffects.Add(new LineEffect(e.Tick, from, to, isKill, sourceType, ttl, isAttacker));
-            _pulseEffects.Add(new PulseEffect(e.Tick, to, isKill));
+            var ttl = sourceType == TowerType.Flamethrower ? 8 : LineTtlTicks;
+            var isAttacker = e.Kind == CombatEventKind.UnitAttackTower || e.Kind == CombatEventKind.UnitHitBase;
+            _lineEffects.Add(new LineEffect(e.Tick.Value, from, to, isKill, sourceType, ttl, isAttacker));
+            _pulseEffects.Add(new PulseEffect(e.Tick.Value, to, isKill));
         }
     }
 
     private void RenderCombatEffects(
         DrawingContext context,
-        GameSnapshotDto snapshot,
+        MatchState snapshot,
         IBrush defenderBrush,
         IBrush attackerBrush,
         int cellSize)
     {
-        var currentTick = snapshot.Hud.Tick;
+        var currentTick = snapshot.Simulation.Tick.Value;
         if (currentTick < 0)
         {
             return;
@@ -509,10 +522,9 @@ public sealed class GameBoardControl : Control
 
             var brush = (effect.IsKill || effect.IsAttacker) ? attackerBrush : defenderBrush;
 
-            if (effect.SourceType == TowerTypeDto.Flamethrower)
+            if (effect.SourceType == TowerType.Flamethrower)
             {
-                // Rendu FLAMMES en CÔNE + PARTICULES
-                var fireColors = new[] { "#FFFF00", "#FFD700", "#FF8C00", "#FF4500" }; // Du centre vers l'extérieur
+                var fireColors = new[] { "#FFFF00", "#FFD700", "#FF8C00", "#FF4500" };
                 var random = new Random(effect.SpawnTick + (int)effect.From.X + (int)effect.From.Y);
                 
                 var dir = new Vector(effect.To.X - effect.From.X, effect.To.Y - effect.From.Y);
@@ -522,8 +534,7 @@ public sealed class GameBoardControl : Control
                     dir /= length;
                     var perp = new Vector(-dir.Y, dir.X);
                     
-                    // 1. Dessiner le cône principal (plus opaque)
-                    var coneWidth = length * 0.4; // Plus large
+                    var coneWidth = length * 0.4;
                     var p1 = effect.From;
                     var p2 = effect.To + perp * coneWidth;
                     var p3 = effect.To - perp * coneWidth;
@@ -537,20 +548,8 @@ public sealed class GameBoardControl : Control
                         geoCtx.EndFigure(isClosed: true);
                     }
                     
-                    // Dégradé pour le cône
-                    var coneBrush = new RadialGradientBrush
-                    {
-                        Center = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
-                        GradientStops =
-                        {
-                            new GradientStop(Color.Parse("#FFFFFFFF"), 0.0),
-                            new GradientStop(Color.Parse("#FFFF4500"), 0.4),
-                            new GradientStop(Color.Parse("#00FF4500"), 1.0)
-                        }
-                    };
                     context.DrawGeometry(new SolidColorBrush(Color.Parse("#FF4500"), (byte)(alpha * 0.4)), null, coneGeometry);
                     
-                    // 2. Dessiner des "Boules de feu" (plus gros, moins pixels)
                     for (int i = 0; i < 12; i++)
                     {
                         var dist = random.NextDouble() * length;
@@ -568,8 +567,13 @@ public sealed class GameBoardControl : Control
             }
             else
             {
-                var pen = new Pen(CreateTintBrush(brush, alpha), thickness) { LineCap = PenLineCap.Round };
-                context.DrawLine(pen, effect.From, effect.To);
+                // Glowing laser drawing style: outer glow + bright core
+                var glowAlpha = (byte)(alpha * 0.35);
+                var glowPen = new Pen(CreateTintBrush(brush, glowAlpha), thickness * 3.0) { LineCap = PenLineCap.Round };
+                context.DrawLine(glowPen, effect.From, effect.To);
+
+                var corePen = new Pen(Brushes.White, thickness * 0.8) { LineCap = PenLineCap.Round };
+                context.DrawLine(corePen, effect.From, effect.To);
             }
         }
 
@@ -606,7 +610,69 @@ public sealed class GameBoardControl : Control
         return (byte)Math.Clamp(a, 0, 255);
     }
 
-    private readonly record struct LineEffect(int SpawnTick, Point From, Point To, bool IsKill, TowerTypeDto? SourceType, int Ttl, bool IsAttacker);
+    private readonly record struct LineEffect(int SpawnTick, Point From, Point To, bool IsKill, TowerType? SourceType, int Ttl, bool IsAttacker);
 
     private readonly record struct PulseEffect(int SpawnTick, Point Center, bool IsKill);
+
+    private void RenderHoverAndRange(DrawingContext context, MatchState snapshot, int cellSize)
+    {
+        if (_hoveredCell == null) return;
+
+        var cell = _hoveredCell.Value;
+        var existingTower = snapshot.Simulation.Towers.FirstOrDefault(t => t.Position.X == cell.X && t.Position.Y == cell.Y);
+
+        double range = 0;
+        Color color = Color.Parse("#00F2FF");
+
+        if (existingTower != null)
+        {
+            range = existingTower.Stats.Range;
+            color = GetTowerColor(existingTower.Type);
+        }
+        else if (IsPlacementMode)
+        {
+            range = GetTowerRange(SelectedTowerType);
+            color = GetTowerColor(SelectedTowerType);
+        }
+
+        // Draw hover square
+        var hoverRect = new Rect(cell.X * cellSize, cell.Y * cellSize, cellSize, cellSize);
+        var hoverBrush = new SolidColorBrush(color, 0.12);
+        var hoverPen = new Pen(new SolidColorBrush(color, 0.6), 1.5);
+        context.DrawRectangle(hoverBrush, hoverPen, hoverRect);
+
+        // Draw range circle if applicable
+        if (range > 0)
+        {
+            var center = new Point(cell.X * cellSize + cellSize / 2.0, cell.Y * cellSize + cellSize / 2.0);
+            var rangeBrush = new SolidColorBrush(color, 0.06);
+            var rangePen = new Pen(new SolidColorBrush(color, 0.35), 1.5)
+            {
+                DashStyle = new DashStyle(new[] { 6.0, 4.0 }, offset: 0)
+            };
+            context.DrawEllipse(rangeBrush, rangePen, center, range, range);
+        }
+    }
+
+    private static int GetTowerRange(TowerType type) => type switch
+    {
+        TowerType.BasicShooter => 250,
+        TowerType.Flamethrower => 180,
+        TowerType.Sniper => 400,
+        TowerType.Cannon => 220,
+        TowerType.Laser => 300,
+        _ => 250
+    };
+
+    private static Color GetTowerColor(TowerType type) => type switch
+    {
+        TowerType.BasicShooter => Color.Parse("#00F2FF"), // Cyan
+        TowerType.Flamethrower => Color.Parse("#FF4500"), // Orange-red
+        TowerType.Sniper => Color.Parse("#FFD700"),       // Gold
+        TowerType.Cannon => Color.Parse("#8A2BE2"),       // Purple
+        TowerType.Laser => Color.Parse("#00FF7F"),        // SpringGreen
+        _ => Color.Parse("#00F2FF")
+    };
+
+    public GridPosition? HoveredCell => _hoveredCell;
 }

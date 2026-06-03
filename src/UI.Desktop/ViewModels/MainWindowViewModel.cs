@@ -1,9 +1,10 @@
 using TowerFluffy.Application.Game;
-using TowerFluffy.Application.Game.Dtos.Combat;
-using TowerFluffy.Application.Game.Dtos.Environment;
-using TowerFluffy.Application.Game.Dtos.Match;
+using TowerFluffy.Domain.Combat;
+using TowerFluffy.Domain.Shared;
+using TowerFluffy.Domain.Match;
+using TowerFluffy.Domain.Engine;
+using TowerFluffy.Domain.Environment;
 using TowerFluffy.Application.Common.Networking;
-using TowerFluffy.Infrastructure.Networking;
 using TowerFluffy.UI.Desktop.Services;
 using ReactiveUI;
 using System;
@@ -12,14 +13,16 @@ using System.Reactive;
 using System.Threading.Tasks;
 using System.Linq;
 
+using RxUnit = System.Reactive.Unit;
+
 namespace TowerFluffy.UI.Desktop.ViewModels;
 
 public sealed class MainWindowViewModel : ViewModelBase
 {
     private GameSession _session;
-    private GameSnapshotDto _snapshot;
+    private MatchState _snapshot;
     private string? _lastError;
-    private SignalRGameClient? _networkClient;
+    private readonly GameNetworkCoordinator _networkCoordinator;
     private DateTime? _gameStartTime;
     private long _totalTicksProcessed;
     private bool _isConnected;
@@ -31,8 +34,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     private string _serverUrl = "http://localhost:5128/gameHub";
     private System.Collections.ObjectModel.ObservableCollection<GameInfoDto> _availableGames = new();
     private PlayerRole _selectedRole = PlayerRole.Both;
-    private GridPositionDto? _movingTowerFrom;
-    private TowerTypeDto _currentTowerType = TowerTypeDto.BasicShooter;
+    private GridPosition? _movingTowerFrom;
+    private TowerType _currentTowerType = TowerType.BasicShooter;
 
     public MainWindowViewModel()
         : this(GameSession.CreateMvp())
@@ -42,7 +45,36 @@ public sealed class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(GameSession session)
     {
         _session = session;
-        _snapshot = _session.Snapshot;
+        _snapshot = _session.State;
+        _networkCoordinator = new GameNetworkCoordinator();
+
+        // Abonnements aux événements réseau
+        _networkCoordinator.ConnectionStatusChanged += isConnected => IsConnected = isConnected;
+        _networkCoordinator.ConnectingStatusChanged += isConnecting => IsConnecting = isConnecting;
+        _networkCoordinator.GameListReceived += games => Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+            _availableGames.Clear();
+            foreach (var g in games) _availableGames.Add(g);
+        });
+        _networkCoordinator.RoleReceived += role => Avalonia.Threading.Dispatcher.UIThread.Post(() => SelectedRole = role);
+        _networkCoordinator.OpponentReadyChanged += ready => Avalonia.Threading.Dispatcher.UIThread.Post(() => IsOpponentReady = ready);
+        _networkCoordinator.GameStarted += (seed, startTime) => Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+            _session = GameSession.CreateMvp(seed);
+            _gameStartTime = new DateTime(startTime, DateTimeKind.Utc);
+            _totalTicksProcessed = 0;
+            Snapshot = _session.State;
+            IsGameStarted = true;
+        });
+        _networkCoordinator.PlayerActionReceived += HandleNetworkAction;
+        _networkCoordinator.ErrorOccurred += err => Avalonia.Threading.Dispatcher.UIThread.Post(() => LastError = string.IsNullOrEmpty(err) ? null : err);
+        _networkCoordinator.RoomClosed += () => {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => {
+                if (IsInGameRoom)
+                {
+                    ExecuteReplay();
+                    LastError = "Le salon a été fermé.";
+                }
+            });
+        };
 
         SkipPreparationCommand = ReactiveCommand.Create(ExecuteSkipPreparation);
         SendSoldatCommand = ReactiveCommand.Create(ExecuteSendSoldat);
@@ -50,13 +82,13 @@ public sealed class MainWindowViewModel : ViewModelBase
         SendRapideCommand = ReactiveCommand.Create(ExecuteSendRapide);
         SendTireurEliteCommand = ReactiveCommand.Create(ExecuteSendTireurElite);
         SendTankCommand = ReactiveCommand.Create(ExecuteSendTank);
-        PlaceTowerCommand = ReactiveCommand.Create<GridPositionDto>(ExecutePlaceTower);
-        SellTowerCommand = ReactiveCommand.Create<GridPositionDto>(ExecuteSellTower);
-        SetBasicTowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerTypeDto.BasicShooter; });
-        SetFlamethrowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerTypeDto.Flamethrower; });
-        SetSniperTowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerTypeDto.Sniper; });
-        SetCannonTowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerTypeDto.Cannon; });
-        SetLaserTowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerTypeDto.Laser; });
+        PlaceTowerCommand = ReactiveCommand.Create<GridPosition>(ExecutePlaceTower);
+        SellTowerCommand = ReactiveCommand.Create<GridPosition>(ExecuteSellTower);
+        SetBasicTowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerType.BasicShooter; });
+        SetFlamethrowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerType.Flamethrower; });
+        SetSniperTowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerType.Sniper; });
+        SetCannonTowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerType.Cannon; });
+        SetLaserTowerCommand = ReactiveCommand.Create(() => { CurrentTowerType = TowerType.Laser; });
         ConnectCommand = ReactiveCommand.CreateFromTask(ExecuteConnect);
         RefreshGamesCommand = ReactiveCommand.CreateFromTask(ExecuteRefreshGames);
         JoinSpecificGameCommand = ReactiveCommand.CreateFromTask<string>(ExecuteJoinSpecificGame);
@@ -119,12 +151,16 @@ public sealed class MainWindowViewModel : ViewModelBase
             this.RaisePropertyChanged(nameof(CanSendUnits));
             this.RaisePropertyChanged(nameof(CanSkipPreparation));
             this.RaisePropertyChanged(nameof(IsSoloMode));
+            this.RaisePropertyChanged(nameof(IsDefenderShopVisible));
+            this.RaisePropertyChanged(nameof(IsAttackerShopVisible));
         }
     }
 
     public bool CanPlaceTower => SelectedRole is PlayerRole.Both or PlayerRole.Defender;
     public bool CanSendUnits => SelectedRole is PlayerRole.Both or PlayerRole.Attacker;
     public bool CanSkipPreparation => SelectedRole is PlayerRole.Both or PlayerRole.Defender;
+    public bool IsDefenderShopVisible => SelectedRole == PlayerRole.Defender || (SelectedRole == PlayerRole.Both && IsDefenderPhase);
+    public bool IsAttackerShopVisible => SelectedRole == PlayerRole.Attacker || (SelectedRole == PlayerRole.Both && !IsDefenderPhase);
 
     public bool IsReady
     {
@@ -132,7 +168,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         set 
         {
             this.RaiseAndSetIfChanged(ref _isReady, value);
-            _networkClient?.SetReady(value);
+            _ = _networkCoordinator.SetReadyAsync(value);
         }
     }
 
@@ -159,7 +195,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     public bool IsConnectionVisible => !IsInGameRoom && !IsGameStarted;
     public bool IsSoloMode => SelectedRole == PlayerRole.Both;
 
-    public GameSnapshotDto Snapshot
+    public MatchState Snapshot
     {
         get => _snapshot;
         private set
@@ -175,20 +211,35 @@ public sealed class MainWindowViewModel : ViewModelBase
             this.RaisePropertyChanged(nameof(IsGameFinished));
             this.RaisePropertyChanged(nameof(GameResultMessage));
             this.RaisePropertyChanged(nameof(GameResultColor));
+            // Notifications pour les liaisons directes simples
+            this.RaisePropertyChanged(nameof(BaseHealth));
+            this.RaisePropertyChanged(nameof(DefenderGold));
+            this.RaisePropertyChanged(nameof(AttackerBudget));
+            this.RaisePropertyChanged(nameof(WaveNumber));
+            this.RaisePropertyChanged(nameof(Level));
+            this.RaisePropertyChanged(nameof(IsDefenderShopVisible));
+            this.RaisePropertyChanged(nameof(IsAttackerShopVisible));
         }
     }
 
-    public bool IsGameFinished => Snapshot.Hud.Phase == MatchPhaseDto.Finished;
+    // Propriétés plates pour liaisons simples dans MainWindow.axaml
+    public int BaseHealth => Snapshot.Simulation.BaseHealth.Value;
+    public int DefenderGold => Snapshot.DefenderGold.Value;
+    public int AttackerBudget => Snapshot.AttackerBudget.Value;
+    public int WaveNumber => Snapshot.WaveNumber;
+    public int Level => Snapshot.CurrentLevel;
 
-    public string GameResultMessage => Snapshot.Hud.Outcome switch
+    public bool IsGameFinished => Snapshot.Phase == MatchPhase.Finished;
+
+    public string GameResultMessage => Snapshot.Outcome switch
     {
-        MatchOutcomeDto.DefenderVictory => SelectedRole switch
+        MatchOutcome.DefenderVictory => SelectedRole switch
         {
             PlayerRole.Defender => "VICTOIRE ! LA BASE EST SAUVE.",
             PlayerRole.Attacker => "DÉFAITE... L'ASSAUT A ÉCHOUÉ.",
             _ => "FIN DE MISSION : DÉFENSE VICTORIEUSE"
         },
-        MatchOutcomeDto.AttackerVictory => SelectedRole switch
+        MatchOutcome.AttackerVictory => SelectedRole switch
         {
             PlayerRole.Attacker => "VICTOIRE ! LE NOYAU EST DÉTRUIT.",
             PlayerRole.Defender => "DÉFAITE... LA BASE A SUCCOMBÉ.",
@@ -197,16 +248,16 @@ public sealed class MainWindowViewModel : ViewModelBase
         _ => "MATCH NUL"
     };
 
-    public string GameResultColor => Snapshot.Hud.Outcome switch
+    public string GameResultColor => Snapshot.Outcome switch
     {
-        MatchOutcomeDto.DefenderVictory => SelectedRole == PlayerRole.Defender ? "#00F2FF" : "#FF2E2E",
-        MatchOutcomeDto.AttackerVictory => SelectedRole == PlayerRole.Attacker ? "#FF00E5" : "#FF2E2E",
+        MatchOutcome.DefenderVictory => SelectedRole == PlayerRole.Defender ? "#00F2FF" : "#FF2E2E",
+        MatchOutcome.AttackerVictory => SelectedRole == PlayerRole.Attacker ? "#FF00E5" : "#FF2E2E",
         _ => "#FFFFFF"
     };
 
-    public string PreparationTimeFormatted => $"{Snapshot.Hud.PreparationTicksRemaining / 60.0:F1} sec";
-    public string WaveSendTimeFormatted => $"{Snapshot.Hud.WaveSendTicksRemaining / 60.0:F1} sec";
-    public bool IsPreparationTimerVisible => Snapshot.Hud.PreparationTicksRemaining > 0;
+    public string PreparationTimeFormatted => $"{Snapshot.PreparationTicksRemaining / 60.0:F1} sec";
+    public string WaveSendTimeFormatted => $"{Snapshot.WaveSendTicksRemaining / 60.0:F1} sec";
+    public bool IsPreparationTimerVisible => Snapshot.PreparationTicksRemaining > 0;
     public bool IsSkipButtonVisible => IsPreparationTimerVisible && CanSkipPreparation;
 
     // COÛTS TACTIQUES (Synchronisés avec GameConfig)
@@ -221,17 +272,17 @@ public sealed class MainWindowViewModel : ViewModelBase
     public int TireurEliteCost => 40;
     public int TankCost => 100;
 
-    public string PhaseFormatted => Snapshot.Hud.Phase switch
+    public string PhaseFormatted => Snapshot.Phase switch
     {
-        MatchPhaseDto.Preparation => "Préparation",
-        MatchPhaseDto.Wave => "Vague",
-        MatchPhaseDto.Finished => "Terminé",
-        _ => Snapshot.Hud.Phase.ToString()
+        MatchPhase.Preparation => "Préparation",
+        MatchPhase.Wave => "Vague",
+        MatchPhase.Finished => "Terminé",
+        _ => Snapshot.Phase.ToString()
     };
 
-    public string ActivePhaseLabel => Snapshot.Hud.Phase == MatchPhaseDto.Preparation ? "PHASE DE DÉFENSE" : "PHASE D'ATTAQUE";
-    public string ActivePhaseTime => Snapshot.Hud.Phase == MatchPhaseDto.Preparation ? PreparationTimeFormatted : WaveSendTimeFormatted;
-    public bool IsDefenderPhase => Snapshot.Hud.Phase == MatchPhaseDto.Preparation;
+    public string ActivePhaseLabel => Snapshot.Phase == MatchPhase.Preparation ? "PHASE DE DÉFENSE" : "PHASE D'ATTAQUE";
+    public string ActivePhaseTime => Snapshot.Phase == MatchPhase.Preparation ? PreparationTimeFormatted : WaveSendTimeFormatted;
+    public bool IsDefenderPhase => Snapshot.Phase == MatchPhase.Preparation;
 
     public string? LastError
     {
@@ -239,7 +290,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         private set => this.RaiseAndSetIfChanged(ref _lastError, value);
     }
 
-    public TowerTypeDto CurrentTowerType
+    public TowerType CurrentTowerType
     {
         get => _currentTowerType;
         set {
@@ -250,11 +301,11 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public string CurrentTowerStats => CurrentTowerType switch
     {
-        TowerTypeDto.BasicShooter => "Dégâts: 5 | Portée: 250 | Cadence: 0.5s | PV: 100",
-        TowerTypeDto.Flamethrower => "Dégâts: 3 | Portée: 180 | Cadence: 0.1s | PV: 120",
-        TowerTypeDto.Sniper => "Dégâts: 40 | Portée: 400 | Cadence: 1.0s | PV: 80",
-        TowerTypeDto.Cannon => "Dégâts: 60 | Portée: 220 | Cadence: 1.0s | PV: 150",
-        TowerTypeDto.Laser => "Dégâts: 10 | Portée: 300 | Cadence: 0.15s | PV: 150",
+        TowerType.BasicShooter => "Dégâts: 5 | Portée: 250 | Cadence: 0.5s | PV: 100",
+        TowerType.Flamethrower => "Dégâts: 3 | Portée: 180 | Cadence: 0.1s | PV: 120",
+        TowerType.Sniper => "Dégâts: 40 | Portée: 400 | Cadence: 1.0s | PV: 80",
+        TowerType.Cannon => "Dégâts: 60 | Portée: 220 | Cadence: 1.0s | PV: 150",
+        TowerType.Laser => "Dégâts: 10 | Portée: 300 | Cadence: 0.15s | PV: 150",
         _ => ""
     };
 
@@ -264,25 +315,25 @@ public sealed class MainWindowViewModel : ViewModelBase
     public string TireurEliteStats => "PV: 15 | Vitesse: 2 | Dégâts: 8 | Portée: 250";
     public string TankStats => "PV: 100 | Vitesse: 1 | Dégâts: 5 | Portée: 120";
 
-    public ReactiveCommand<Unit, Unit> SkipPreparationCommand { get; }
-    public ReactiveCommand<Unit, Unit> SendSoldatCommand { get; }
-    public ReactiveCommand<Unit, Unit> SendBruteCommand { get; }
-    public ReactiveCommand<Unit, Unit> SendRapideCommand { get; }
-    public ReactiveCommand<Unit, Unit> SendTireurEliteCommand { get; }
-    public ReactiveCommand<Unit, Unit> SendTankCommand { get; }
-    public ReactiveCommand<GridPositionDto, Unit> PlaceTowerCommand { get; }
-    public ReactiveCommand<GridPositionDto, Unit> SellTowerCommand { get; }
-    public ReactiveCommand<Unit, Unit> SetBasicTowerCommand { get; }
-    public ReactiveCommand<Unit, Unit> SetFlamethrowerCommand { get; }
-    public ReactiveCommand<Unit, Unit> SetSniperTowerCommand { get; }
-    public ReactiveCommand<Unit, Unit> SetCannonTowerCommand { get; }
-    public ReactiveCommand<Unit, Unit> SetLaserTowerCommand { get; }
-    public ReactiveCommand<Unit, Unit> ConnectCommand { get; }
-    public ReactiveCommand<Unit, Unit> RefreshGamesCommand { get; }
-    public ReactiveCommand<string, Unit> JoinSpecificGameCommand { get; }
-    public ReactiveCommand<Unit, Unit> StartSoloCommand { get; }
-    public ReactiveCommand<Unit, Unit> ReplayCommand { get; }
-    public ReactiveCommand<Unit, Unit> QuitCommand { get; }
+    public ReactiveCommand<RxUnit, RxUnit> SkipPreparationCommand { get; }
+    public ReactiveCommand<RxUnit, RxUnit> SendSoldatCommand { get; }
+    public ReactiveCommand<RxUnit, RxUnit> SendBruteCommand { get; }
+    public ReactiveCommand<RxUnit, RxUnit> SendRapideCommand { get; }
+    public ReactiveCommand<RxUnit, RxUnit> SendTireurEliteCommand { get; }
+    public ReactiveCommand<RxUnit, RxUnit> SendTankCommand { get; }
+    public ReactiveCommand<GridPosition, RxUnit> PlaceTowerCommand { get; }
+    public ReactiveCommand<GridPosition, RxUnit> SellTowerCommand { get; }
+    public ReactiveCommand<RxUnit, RxUnit> SetBasicTowerCommand { get; }
+    public ReactiveCommand<RxUnit, RxUnit> SetFlamethrowerCommand { get; }
+    public ReactiveCommand<RxUnit, RxUnit> SetSniperTowerCommand { get; }
+    public ReactiveCommand<RxUnit, RxUnit> SetCannonTowerCommand { get; }
+    public ReactiveCommand<RxUnit, RxUnit> SetLaserTowerCommand { get; }
+    public ReactiveCommand<RxUnit, RxUnit> ConnectCommand { get; }
+    public ReactiveCommand<RxUnit, RxUnit> RefreshGamesCommand { get; }
+    public ReactiveCommand<string, RxUnit> JoinSpecificGameCommand { get; }
+    public ReactiveCommand<RxUnit, RxUnit> StartSoloCommand { get; }
+    public ReactiveCommand<RxUnit, RxUnit> ReplayCommand { get; }
+    public ReactiveCommand<RxUnit, RxUnit> QuitCommand { get; }
 
     public void Tick()
     {
@@ -294,54 +345,19 @@ public sealed class MainWindowViewModel : ViewModelBase
         var now = DateTime.UtcNow;
         var elapsed = now - _gameStartTime.Value;
         
-        // On vise 60 ticks par seconde
         long targetTicks = (long)(elapsed.TotalSeconds * 60);
         int ticksToProcess = (int)(targetTicks - _totalTicksProcessed);
 
         if (ticksToProcess <= 0) return;
 
-        // On limite le rattrapage pour éviter de freezer si le décalage est énorme
         ticksToProcess = Math.Min(ticksToProcess, 10);
         
         _session.Tick(ticksToProcess);
         _totalTicksProcessed += ticksToProcess;
-        Snapshot = _session.Snapshot;
+        
+        Snapshot = _session.State;
 
-        // Effets sonores
-        foreach (var ev in Snapshot.CombatEvents)
-        {
-            if (ev.Kind == CombatEventKindDto.TowerShot)
-            {
-                if (ev.SourceTowerType == TowerTypeDto.Flamethrower)
-                {
-                    SoundEffects.PlayFlame();
-                }
-                else if (ev.SourceTowerType == TowerTypeDto.Laser)
-                {
-                    SoundEffects.PlayOrbital();
-                }
-                else if (ev.SourceTowerType == TowerTypeDto.Cannon)
-                {
-                    SoundEffects.PlayCannon();
-                }
-                else
-                {
-                    SoundEffects.PlayLaser();
-                }
-            }
-            else if (ev.Kind == CombatEventKindDto.UnitAttackTower || ev.Kind == CombatEventKindDto.UnitHitBase)
-            {
-                var unit = System.Linq.Enumerable.FirstOrDefault(Snapshot.Units, u => u.Id == ev.SourceId);
-                if (unit != null && unit.Type == UnitTypeDto.Tank)
-                {
-                    SoundEffects.PlayCannon();
-                }
-                else
-                {
-                    SoundEffects.PlayLaser();
-                }
-            }
-        }
+        SoundEffects.PlayEvents(Snapshot.LastCombatEvents, Snapshot.Simulation.Units);
     }
 
     private void ExecuteSkipPreparation()
@@ -353,51 +369,50 @@ public sealed class MainWindowViewModel : ViewModelBase
     private void ExecuteSendSoldat()
     {
         if (!CanSendUnits) return;
-        Apply(_session.SendUnit(UnitTypeDto.Soldat));
-        BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitTypeDto.Soldat);
+        Apply(_session.SendUnit(UnitType.Soldat));
+        BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitType.Soldat);
     }
 
     private void ExecuteSendBrute()
     {
         if (!CanSendUnits) return;
-        Apply(_session.SendUnit(UnitTypeDto.Brute));
-        BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitTypeDto.Brute);
+        Apply(_session.SendUnit(UnitType.Brute));
+        BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitType.Brute);
     }
 
     private void ExecuteSendRapide()
     {
         if (!CanSendUnits) return;
-        Apply(_session.SendUnit(UnitTypeDto.Rapide));
-        BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitTypeDto.Rapide);
+        Apply(_session.SendUnit(UnitType.Rapide));
+        BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitType.Rapide);
     }
 
     private void ExecuteSendTireurElite()
     {
         if (!CanSendUnits) return;
-        Apply(_session.SendUnit(UnitTypeDto.TireurElite));
-        BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitTypeDto.TireurElite);
+        Apply(_session.SendUnit(UnitType.TireurElite));
+        BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitType.TireurElite);
     }
 
     private void ExecuteSendTank()
     {
         if (!CanSendUnits) return;
-        Apply(_session.SendUnit(UnitTypeDto.Tank));
-        BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitTypeDto.Tank);
+        Apply(_session.SendUnit(UnitType.Tank));
+        BroadcastAction(PlayerActionKind.SendWave, unitType: (int)UnitType.Tank);
     }
 
-    private void ExecutePlaceTower(GridPositionDto position)
+    private void ExecutePlaceTower(GridPosition position)
     {
         if (!CanPlaceTower) return;
 
-        if (Snapshot.Hud.Phase != MatchPhaseDto.Preparation)
+        if (Snapshot.Phase != MatchPhase.Preparation)
         {
             LastError = "ACTION IMPOSSIBLE : Attendez la phase de préparation.";
             return;
         }
 
-        var existingTower = Snapshot.Towers.FirstOrDefault(t => t.Cell.X == position.X && t.Cell.Y == position.Y);
+        var existingTower = Snapshot.Simulation.Towers.FirstOrDefault(t => t.Position.X == position.X && t.Position.Y == position.Y);
 
-        // CAS 1 : On vient de "lâcher" une tour sélectionnée sur une case vide
         if (_movingTowerFrom != null && existingTower == null)
         {
             var oldPos = _movingTowerFrom.Value;
@@ -408,12 +423,11 @@ public sealed class MainWindowViewModel : ViewModelBase
                 BroadcastAction(PlayerActionKind.MoveTower, x: position.X, y: position.Y, oldX: oldPos.X, oldY: oldPos.Y);
                 _movingTowerFrom = null;
                 Apply(result);
-                LastError = null; // Effacer le message de sélection
+                LastError = null;
                 return;
             }
         }
 
-        // CAS 2 : On clique sur une tour (pour commencer un drag)
         if (existingTower != null)
         {
             _movingTowerFrom = position;
@@ -421,23 +435,20 @@ public sealed class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        // CAS 3 : On relâche sur une case vide sans tour sélectionnée (ou après avoir annulé)
-        // On ne construit que si on n'était pas en train de tenter un déplacement
         if (_movingTowerFrom == null)
         {
             Apply(_session.PlaceTower(CurrentTowerType, position));
             BroadcastAction(PlayerActionKind.PlaceTower, towerType: (int)CurrentTowerType, x: position.X, y: position.Y);
         }
         
-        // Reset de sécurité
         _movingTowerFrom = null;
     }
 
-    private void ExecuteSellTower(GridPositionDto position)
+    private void ExecuteSellTower(GridPosition position)
     {
         if (!CanPlaceTower) return;
 
-        if (Snapshot.Hud.Phase != MatchPhaseDto.Preparation)
+        if (Snapshot.Phase != MatchPhase.Preparation)
         {
             LastError = "ACTION IMPOSSIBLE : Attendez la phase de préparation.";
             return;
@@ -461,49 +472,11 @@ public sealed class MainWindowViewModel : ViewModelBase
         LastError = null;
         try
         {
-            await Task.Delay(500);
-
-            _networkClient = new SignalRGameClient(ServerUrl.Trim());
-            _networkClient.OnPlayerActionReceived += HandleNetworkAction;
-            _networkClient.OnGameStarted += (seed, startTime) => Avalonia.Threading.Dispatcher.UIThread.Post(() => {
-                _session = GameSession.CreateMvp(seed);
-                _gameStartTime = new DateTime(startTime, DateTimeKind.Utc);
-                _totalTicksProcessed = 0;
-                Snapshot = _session.Snapshot;
-                IsGameStarted = true;
-            });
-            _networkClient.OnOpponentReady += (ready) => Avalonia.Threading.Dispatcher.UIThread.Post(() => IsOpponentReady = ready);
-            _networkClient.OnGameListReceived += (games) => Avalonia.Threading.Dispatcher.UIThread.Post(() => {
-                _availableGames.Clear();
-                foreach (var g in games) _availableGames.Add(g);
-            });
-            _networkClient.OnRoleReceived += role => {
-                Avalonia.Threading.Dispatcher.UIThread.Post(() => {
-                    SelectedRole = (PlayerRole)role;
-                });
-            };
-
-            _networkClient.OnRoomClosed += () => {
-                Avalonia.Threading.Dispatcher.UIThread.Post(() => {
-                    if (IsInGameRoom)
-                    {
-                        ExecuteReplay();
-                        LastError = "Le salon a été fermé.";
-                    }
-                });
-            };
-
-            await _networkClient.StartAsync();
-            IsConnected = true;
-            
-            // On récupère la liste initiale
-            await _networkClient.GetActiveGames();
+            await _networkCoordinator.ConnectAsync(ServerUrl);
         }
-        catch (System.Exception ex)
+        catch (Exception)
         {
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => {
-                LastError = $"ERREUR RÉSEAU : {ex.Message}";
-            });
+            // L'erreur réseau est interceptée par le coordinateur
         }
         finally
         {
@@ -513,19 +486,13 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private async Task ExecuteRefreshGames()
     {
-        if (_networkClient != null)
-        {
-            await _networkClient.GetActiveGames();
-        }
+        await _networkCoordinator.RefreshGamesAsync();
     }
 
     private async Task ExecuteJoinSpecificGame(string gameId)
     {
-        if (_networkClient != null)
-        {
-            await _networkClient.JoinGame(gameId, (int)SelectedRole);
-            IsInGameRoom = true;
-        }
+        await _networkCoordinator.JoinGameAsync(gameId, SelectedRole);
+        IsInGameRoom = true;
     }
 
     private void ExecuteStartSolo()
@@ -533,15 +500,15 @@ public sealed class MainWindowViewModel : ViewModelBase
         _session = GameSession.CreateMvp();
         _gameStartTime = DateTime.UtcNow;
         _totalTicksProcessed = 0;
-        Snapshot = _session.Snapshot;
+        Snapshot = _session.State;
         IsGameStarted = true;
     }
 
     private void ExecuteReplay()
     {
-        if (_networkClient != null && IsConnected)
+        if (IsConnected)
         {
-            Task.Run(async () => await _networkClient.LeaveGame());
+            Task.Run(async () => await _networkCoordinator.LeaveGameAsync());
         }
 
         IsGameStarted = false;
@@ -550,9 +517,9 @@ public sealed class MainWindowViewModel : ViewModelBase
         IsOpponentReady = false;
         _gameStartTime = null;
         _totalTicksProcessed = 0;
-        
+
         _session = GameSession.CreateMvp();
-        Snapshot = _session.Snapshot;
+        Snapshot = _session.State;
     }
 
     private void ExecuteQuit()
@@ -571,21 +538,21 @@ public sealed class MainWindowViewModel : ViewModelBase
                 case PlayerActionKind.PlaceTower:
                     if (action.TowerType.HasValue && action.X.HasValue && action.Y.HasValue)
                     {
-                        Apply(_session.PlaceTower((TowerTypeDto)action.TowerType.Value, new GridPositionDto(action.X.Value, action.Y.Value)));
+                        Apply(_session.PlaceTower((TowerType)action.TowerType.Value, new GridPosition(action.X.Value, action.Y.Value)));
                     }
                     break;
                 case PlayerActionKind.SendWave:
                     if (action.UnitType.HasValue)
                     {
-                        Apply(_session.SendUnit((UnitTypeDto)action.UnitType.Value));
+                        Apply(_session.SendUnit((UnitType)action.UnitType.Value));
                     }
                     break;
                 case PlayerActionKind.MoveTower:
                     if (action.X.HasValue && action.Y.HasValue && action.OldX.HasValue && action.OldY.HasValue)
                     {
                         Apply(_session.MoveTower(
-                            new GridPositionDto(action.OldX.Value, action.OldY.Value), 
-                            new GridPositionDto(action.X.Value, action.Y.Value)));
+                            new GridPosition(action.OldX.Value, action.OldY.Value), 
+                            new GridPosition(action.X.Value, action.Y.Value)));
                     }
                     break;
                 case PlayerActionKind.SkipPreparation:
@@ -594,7 +561,7 @@ public sealed class MainWindowViewModel : ViewModelBase
                 case PlayerActionKind.SellTower:
                     if (action.X.HasValue && action.Y.HasValue)
                     {
-                        Apply(_session.SellTower(new GridPositionDto(action.X.Value, action.Y.Value)));
+                        Apply(_session.SellTower(new GridPosition(action.X.Value, action.Y.Value)));
                     }
                     break;
             }
@@ -603,10 +570,9 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     private void BroadcastAction(PlayerActionKind kind, int? towerType = null, int? x = null, int? y = null, int? unitType = null, int? oldX = null, int? oldY = null)
     {
-        if (_networkClient != null && IsConnected)
+        if (IsConnected)
         {
-            var action = new PlayerAction(1, kind, towerType, x, y, unitType, oldX, oldY, _totalTicksProcessed);
-            _ = _networkClient.SendPlayerAction(action);
+            _ = _networkCoordinator.SendActionAsync(kind, towerType, x, y, unitType, oldX, oldY, _totalTicksProcessed);
         }
     }
 
@@ -619,7 +585,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
 
         LastError = null;
-        Snapshot = _session.Snapshot;
+        Snapshot = _session.State;
     }
 }
 
