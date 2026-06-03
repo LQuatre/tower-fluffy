@@ -384,16 +384,44 @@ public sealed class MainWindowViewModel : ViewModelBase
     public bool IsSkipButtonVisible => IsPreparationTimerVisible && CanSkipPreparation;
 
     // COÛTS TACTIQUES (Synchronisés avec GameConfig)
-    public int BasicTowerCost => 50;
-    public int FlamethrowerCost => 200;
-    public int SniperTowerCost => 150;
-    public int CannonTowerCost => 300;
-    public int LaserTowerCost => 400;
-    public int SoldatCost => 12;
-    public int BruteCost => 60;
-    public int RapideCost => 20;
-    public int TireurEliteCost => 40;
-    public int TankCost => 100;
+    private int GetTowerCost(TowerType type)
+    {
+        var idx = _customTowers.FindIndex(t => t.Type == type);
+        return idx != -1 ? _customTowers[idx].Stats.Cost.Value : 0;
+    }
+
+    private int GetUnitCost(UnitType type)
+    {
+        var idx = _customUnits.FindIndex(u => u.Type == type);
+        return idx != -1 ? _customUnits[idx].Cost.Value : 0;
+    }
+
+    private string GetTowerStatsString(TowerType type)
+    {
+        var idx = _customTowers.FindIndex(t => t.Type == type);
+        if (idx == -1) return "";
+        var t = _customTowers[idx];
+        return $"Dégâts: {t.Stats.DamagePerShot.Value} | Portée: {t.Stats.Range} | Cadence: {(t.Stats.CooldownTicksBetweenShots / 60.0):F1}s | PV: {t.Health.Value}";
+    }
+
+    private string GetUnitStatsString(UnitType type)
+    {
+        var idx = _customUnits.FindIndex(u => u.Type == type);
+        if (idx == -1) return "";
+        var u = _customUnits[idx];
+        return $"PV: {u.Health.Value} | Vitesse: {u.SpeedPerTick} | Portée: {u.AttackRange} | Butin: {u.LootGold.Value} CR";
+    }
+
+    public int BasicTowerCost => GetTowerCost(TowerType.BasicShooter);
+    public int FlamethrowerCost => GetTowerCost(TowerType.Flamethrower);
+    public int SniperTowerCost => GetTowerCost(TowerType.Sniper);
+    public int CannonTowerCost => GetTowerCost(TowerType.Cannon);
+    public int LaserTowerCost => GetTowerCost(TowerType.Laser);
+    public int SoldatCost => GetUnitCost(UnitType.Soldat);
+    public int BruteCost => GetUnitCost(UnitType.Brute);
+    public int RapideCost => GetUnitCost(UnitType.Rapide);
+    public int TireurEliteCost => GetUnitCost(UnitType.TireurElite);
+    public int TankCost => GetUnitCost(UnitType.Tank);
 
     public string PhaseFormatted => Snapshot.Phase switch
     {
@@ -422,21 +450,13 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
-    public string CurrentTowerStats => CurrentTowerType switch
-    {
-        TowerType.BasicShooter => "Dégâts: 5 | Portée: 250 | Cadence: 0.5s | PV: 100",
-        TowerType.Flamethrower => "Dégâts: 3 | Portée: 180 | Cadence: 0.1s | PV: 120",
-        TowerType.Sniper => "Dégâts: 40 | Portée: 400 | Cadence: 1.0s | PV: 80",
-        TowerType.Cannon => "Dégâts: 60 | Portée: 220 | Cadence: 1.0s | PV: 150",
-        TowerType.Laser => "Dégâts: 10 | Portée: 300 | Cadence: 0.15s | PV: 150",
-        _ => ""
-    };
+    public string CurrentTowerStats => GetTowerStatsString(CurrentTowerType);
 
-    public string SoldatStats => "PV: 4 | Vitesse: 3 | Dégâts: 2 | Portée: 150";
-    public string BruteStats => "PV: 30 | Vitesse: 1 | Dégâts: 10 | Portée: 180";
-    public string RapideStats => "PV: 8 | Vitesse: 5 | Dégâts: 1 | Portée: 100";
-    public string TireurEliteStats => "PV: 15 | Vitesse: 2 | Dégâts: 8 | Portée: 250";
-    public string TankStats => "PV: 100 | Vitesse: 1 | Dégâts: 5 | Portée: 120";
+    public string SoldatStats => GetUnitStatsString(UnitType.Soldat);
+    public string BruteStats => GetUnitStatsString(UnitType.Brute);
+    public string RapideStats => GetUnitStatsString(UnitType.Rapide);
+    public string TireurEliteStats => GetUnitStatsString(UnitType.TireurElite);
+    public string TankStats => GetUnitStatsString(UnitType.Tank);
 
     public ReactiveCommand<RxUnit, RxUnit> SkipPreparationCommand { get; }
     public ReactiveCommand<RxUnit, RxUnit> SendSoldatCommand { get; }
@@ -847,6 +867,13 @@ public sealed class MainWindowViewModel : ViewModelBase
                 existing.Health
             );
             RecreateConfig();
+
+            this.RaisePropertyChanged(nameof(BasicTowerCost));
+            this.RaisePropertyChanged(nameof(FlamethrowerCost));
+            this.RaisePropertyChanged(nameof(SniperTowerCost));
+            this.RaisePropertyChanged(nameof(CannonTowerCost));
+            this.RaisePropertyChanged(nameof(LaserTowerCost));
+            this.RaisePropertyChanged(nameof(CurrentTowerStats));
         }
     }
 
@@ -869,6 +896,17 @@ public sealed class MainWindowViewModel : ViewModelBase
                 new Gold(BalancingUnitBounty)
             );
             RecreateConfig();
+
+            this.RaisePropertyChanged(nameof(SoldatCost));
+            this.RaisePropertyChanged(nameof(BruteCost));
+            this.RaisePropertyChanged(nameof(RapideCost));
+            this.RaisePropertyChanged(nameof(TireurEliteCost));
+            this.RaisePropertyChanged(nameof(TankCost));
+            this.RaisePropertyChanged(nameof(SoldatStats));
+            this.RaisePropertyChanged(nameof(BruteStats));
+            this.RaisePropertyChanged(nameof(RapideStats));
+            this.RaisePropertyChanged(nameof(TireurEliteStats));
+            this.RaisePropertyChanged(nameof(TankStats));
         }
     }
 
